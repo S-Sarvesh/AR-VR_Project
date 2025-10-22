@@ -5,237 +5,263 @@
   <title>Deforested Forest with Growable Saplings</title>
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+  <style>
+    #uiContainer {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 12px 16px;
+      border-radius: 10px;
+      max-width: 230px;
+      z-index: 10;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+    #uiContainer h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      text-align: center;
+      color: #7cf57c;
+    }
+    #uiContainer p {
+      font-size: 13px;
+      line-height: 1.4em;
+      margin: 3px 0;
+    }
+    #progressBarContainer {
+      margin-top: 10px;
+      width: 100%;
+      height: 10px;
+      background-color: rgba(255,255,255,0.2);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    #progressBarFill {
+      height: 100%;
+      width: 0%;
+      background-color: #4caf50;
+      transition: width 0.5s ease;
+    }
+
+    #afforestationMessage {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 32px;
+      color: #ffffff;
+      text-align: center;
+      background: rgba(0,0,0,0.6);
+      padding: 20px 30px;
+      border-radius: 15px;
+      display: none;
+      z-index: 20;
+      font-family: 'Arial', sans-serif;
+      animation: fadeIn 2s ease;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0;}
+      to {opacity: 1;}
+    }
+  </style>
 </head>
+
 <body>
-<a-scene background="color: #8b8b8b" fog="type: linear; color: #8b8b8b; near: 6; far: 60">
+  <div id="uiContainer">
+    <h3>🌱 Controls</h3>
+    <p><strong>Move:</strong> W / A / S / D keys</p>
+    <p><strong>Look Around:</strong> Mouse</p>
+    <p><strong>Water Saplings:</strong> Left-click or VR Trigger</p>
+    <div id="progressBarContainer">
+      <div id="progressBarFill"></div>
+    </div>
+    <p style="text-align:center;font-size:12px;margin-top:4px;">Saplings Watered: <span id="wateredCount">0</span>/5</p>
+  </div>
 
-  <!-- Assets -->
-  <a-assets>
-    <a-asset-item id="deadTree1" src="models/dead_tree.glb"></a-asset-item>
-    <a-asset-item id="deadTree2" src="models/dead_tree2.glb"></a-asset-item>
-    <a-asset-item id="deadTree3" src="models/dead_tree3.glb"></a-asset-item>
-    <a-asset-item id="saplingModel" src="models/treesapling.glb"></a-asset-item>
-    <a-asset-item id="healthyTree" src="models/tree.glb"></a-asset-item>
-  </a-assets>
+  <div id="afforestationMessage">🌳 Planting a tree, plants hope. 🌍<br>A GREENER tomorrow starts with a SINGLE tree!</div>
 
-  <!-- Lights -->
-  <a-entity light="type: ambient; intensity: 0.6; color: #666"></a-entity>
-  <a-entity light="type: directional; intensity: 0.9; color: #ffdcb0" position="-10 20 -10"></a-entity>
+  <a-scene background="color: #8b8b8b" fog="type: linear; color: #8b8b8b; near: 6; far: 60">
 
-  <!-- Sky & Ground -->
-  <a-sky color="#9e9ea0"></a-sky>
-  <a-plane rotation="-90 0 0" width="200" height="200" color="#6b4f3b"></a-plane>
+    <a-assets>
+      <a-asset-item id="deadTree1" src="models/dead_tree.glb"></a-asset-item>
+      <a-asset-item id="deadTree2" src="models/dead_tree2.glb"></a-asset-item>
+      <a-asset-item id="deadTree3" src="models/dead_tree3.glb"></a-asset-item>
+      <a-asset-item id="saplingModel" src="models/treesapling.glb"></a-asset-item>
+      <a-asset-item id="healthyTree" src="models/tree.glb"></a-asset-item>
+    </a-assets>
 
-  <!-- Camera rig -->
-  <a-entity id="rig" position="0 1.6 4">
-    <a-entity camera look-controls wasd-controls cursor="rayOrigin: mouse"></a-entity>
-    <a-entity id="leftHand" hand-controls="hand: left"></a-entity>
-    <a-entity id="rightHand" hand-controls="hand: right"></a-entity>
-  </a-entity>
+    <a-entity light="type: ambient; intensity: 0.6; color: #666"></a-entity>
+    <a-entity light="type: directional; intensity: 0.9; color: #ffdcb0" position="-10 20 -10"></a-entity>
 
-  <!-- Forest and saplings -->
-  <a-entity id="forestContainer"></a-entity>
-  <a-entity id="saplingContainer"></a-entity>
+    <a-sky id="sceneSky" color="#9e9ea0"></a-sky>
+    <a-plane id="groundPlane" rotation="-90 0 0" width="200" height="200" color="#6b4f3b"></a-plane>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const forest = document.getElementById("forestContainer");
-      const saplings = document.getElementById("saplingContainer");
+    <a-entity id="rig" position="0 1.6 4">
+      <a-entity camera look-controls wasd-controls cursor="rayOrigin: mouse"></a-entity>
+      <a-entity id="leftHand" hand-controls="hand: left"></a-entity>
+      <a-entity id="rightHand" hand-controls="hand: right"></a-entity>
+    </a-entity>
 
-      function rand(min, max) { return Math.random() * (max - min) + min; }
+    <a-entity id="forestContainer"></a-entity>
+    <a-entity id="saplingContainer"></a-entity>
 
-      // --- Dead trees with better spacing and adjusted scales ---
-      const deadTreeModels = [
-        { id: "#deadTree1", scales: ["0.5 0.9 0.5", "0.55 1.0 0.55", "0.6 1.1 0.6"] }, // slightly larger
-        { id: "#deadTree2", scales: ["0.3 0.5 0.3", "0.32 0.52 0.32", "0.35 0.55 0.35"] }, // smaller
-        { id: "#deadTree3", scales: ["0.02 0.03 0.02", "0.025 0.035 0.025", "0.03 0.04 0.03"] } 
-      ];
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const forest = document.getElementById("forestContainer");
+        const saplings = document.getElementById("saplingContainer");
+        const wateredCountText = document.getElementById("wateredCount");
+        const progressBarFill = document.getElementById("progressBarFill");
+        const sky = document.getElementById("sceneSky");
+        const ground = document.getElementById("groundPlane");
+        const message = document.getElementById("afforestationMessage");
 
-      const usedPositions = [];
-      const minDistance = 6; // Minimum distance between trees
+        let wateredCount = 0;
+        let forestTransformed = false;
 
-      function isTooClose(x, z, positions, minDist) {
-        return positions.some(pos => {
-          const dx = pos.x - x;
-          const dz = pos.z - z;
-          return Math.sqrt(dx * dx + dz * dz) < minDist;
-        });
-      }
+        function updateProgress() {
+          wateredCount++;
+          if (wateredCount > 5) wateredCount = 5;
+          wateredCountText.textContent = wateredCount;
+          progressBarFill.style.width = (wateredCount / 5) * 100 + "%";
 
-      // Place dead trees with spacing
-      for (let i = 0; i < 12; i++) {
-        let x, z, attempts = 0;
-        do {
-          x = rand(-35, 35);
-          z = rand(-35, 35);
-          attempts++;
-        } while (isTooClose(x, z, usedPositions, minDistance) && attempts < 50);
-
-        usedPositions.push({ x, z });
-
-        const treeObj = deadTreeModels[Math.floor(Math.random() * deadTreeModels.length)];
-        const scale = treeObj.scales[Math.floor(Math.random() * treeObj.scales.length)];
-        let y = (treeObj.id === "#deadTree3") ? 0.05 : 0;
-
-        const tree = document.createElement("a-entity");
-        tree.setAttribute("gltf-model", treeObj.id);
-        tree.setAttribute("position", `${x} ${y} ${z}`);
-        tree.setAttribute("scale", scale);
-        tree.setAttribute("rotation", `0 ${rand(0,360)} 0`);
-        forest.appendChild(tree);
-      }
-
-      // --- Saplings with better spacing ---
-      const saplingPositions = [];
-      const saplingMinDistance = 5;
-      const saplingBaseScale = 0.008;
-
-      for (let i = 0; i < 12; i++) {
-        let x, z, attempts = 0;
-        do {
-          x = rand(-25, 25);
-          z = rand(-25, 25);
-          attempts++;
-        } while ((isTooClose(x, z, saplingPositions, saplingMinDistance) || 
-                  isTooClose(x, z, usedPositions, 4)) && attempts < 50);
-
-        saplingPositions.push({ x, z });
-
-        const sapling = document.createElement("a-entity");
-        sapling.setAttribute("class", "sapling");
-        sapling.setAttribute("position", `${x} 0 ${z}`);
-
-        const randomScale = (saplingBaseScale * rand(0.8, 1.2)).toFixed(4);
-
-        const saplingModel = document.createElement("a-entity");
-        saplingModel.setAttribute("gltf-model", "#saplingModel");
-
-        const scaleX = randomScale;
-        const scaleY = (randomScale * 0.6).toFixed(4);
-        const scaleZ = randomScale;
-
-        saplingModel.setAttribute("scale", `${scaleX} ${scaleY} ${scaleZ}`);
-        saplingModel.setAttribute("rotation", `0 ${rand(0,360)} 0`);
-        saplingModel.setAttribute("class", "saplingModel");
-        sapling.appendChild(saplingModel);
-
-        const clickBox = document.createElement("a-box");
-        clickBox.setAttribute("width", 0.5);
-        clickBox.setAttribute("height", 1.0);
-        clickBox.setAttribute("depth", 0.5);
-        clickBox.setAttribute("material", "opacity:0; transparent:true");
-        sapling.appendChild(clickBox);
-
-        // Left-click for watering animation then grow
-        sapling.addEventListener("click", (evt) => {
-          if (evt.detail.cursorEl) {
-            createWateringEffect(sapling);
-            setTimeout(() => growIntoTree(sapling), 1000);
+          if (wateredCount === 5 && !forestTransformed) {
+            forestTransformed = true;
+            setTimeout(() => transformToGreenForest(), 1000);
           }
-        });
-
-        saplings.appendChild(sapling);
-      }
-
-      // --- Blue particle watering animation ---
-      function createWateringEffect(sapling) {
-        const particleCount = 20;
-        const particles = [];
-
-        for (let i = 0; i < particleCount; i++) {
-          const particle = document.createElement("a-sphere");
-          particle.setAttribute("radius", 0.08);
-          particle.setAttribute("material", "color: #00bfff; opacity: 0.9; transparent: true; shader: flat");
-          
-          const offsetX = rand(-0.4, 0.4);
-          const offsetZ = rand(-0.4, 0.4);
-          const startY = rand(1.2, 1.8);
-          particle.setAttribute("position", `${offsetX} ${startY} ${offsetZ}`);
-          
-          // Animate particles falling
-          const fallDuration = rand(600, 1000);
-          const endY = rand(0, 0.3);
-          
-          particle.setAttribute("animation__fall", 
-            `property: position; to: ${offsetX} ${endY} ${offsetZ}; dur: ${fallDuration}; easing: easeInQuad`);
-          particle.setAttribute("animation__fade", 
-            `property: material.opacity; to: 0; dur: ${fallDuration}; easing: linear`);
-          particle.setAttribute("animation__size", 
-            `property: radius; to: 0.03; dur: ${fallDuration}; easing: easeInQuad`);
-          
-          sapling.appendChild(particle);
-          particles.push(particle);
         }
 
-        // Remove particles after animation
-        setTimeout(() => {
-          particles.forEach(p => {
-            if (p.parentNode) p.parentNode.removeChild(p);
+        function rand(min, max) { return Math.random() * (max - min) + min; }
+
+        const deadTreeModels = [
+          { id: "#deadTree1", scales: ["0.5 0.9 0.5", "0.55 1.0 0.55", "0.6 1.1 0.6"] },
+          { id: "#deadTree2", scales: ["0.3 0.5 0.3", "0.32 0.52 0.32", "0.35 0.55 0.35"] },
+          { id: "#deadTree3", scales: ["0.02 0.03 0.02", "0.025 0.035 0.025", "0.03 0.04 0.03"] }
+        ];
+
+        const usedPositions = [];
+        const minDistance = 6;
+
+        function isTooClose(x, z, positions, minDist) {
+          return positions.some(pos => {
+            const dx = pos.x - x;
+            const dz = pos.z - z;
+            return Math.sqrt(dx * dx + dz * dz) < minDist;
           });
-        }, 1200);
-      }
+        }
 
-      // --- Grow saplings into healthy trees ---
-      function growIntoTree(sapling) {
-        if (sapling.getAttribute("grown")) return;
-        sapling.setAttribute("grown", true);
+        // --- Dead trees ---
+        for (let i = 0; i < 12; i++) {
+          let x, z;
+          do { x = rand(-35, 35); z = rand(-35, 35); }
+          while (isTooClose(x, z, usedPositions, minDistance));
+          usedPositions.push({ x, z });
 
-        // Growth effect
-        const effect = document.createElement("a-sphere");
-        effect.setAttribute("position", "0 0 0");
-        effect.setAttribute("radius", 0.1);
-        effect.setAttribute("material", "color: #00ff00; opacity: 0.7; transparent: true");
-        sapling.appendChild(effect);
-        effect.setAttribute("animation__scale", "property: scale; to: 2 2 2; dur: 500; easing: easeOutQuad");
-        effect.setAttribute("animation__opacity", "property: material.opacity; to: 0; dur: 500; easing: linear");
-        setTimeout(() => sapling.removeChild(effect), 500);
+          const treeObj = deadTreeModels[Math.floor(Math.random() * deadTreeModels.length)];
+          const scale = treeObj.scales[Math.floor(Math.random() * treeObj.scales.length)];
+          const tree = document.createElement("a-entity");
+          tree.setAttribute("gltf-model", treeObj.id);
+          tree.setAttribute("position", `${x} 0 ${z}`);
+          tree.setAttribute("scale", scale);
+          tree.setAttribute("rotation", `0 ${rand(0,360)} 0`);
+          forest.appendChild(tree);
+        }
 
-        const sapPos = new THREE.Vector3();
-        sapling.object3D.getWorldPosition(sapPos);
+        // --- Saplings ---
+        const saplingPositions = [];
+        for (let i = 0; i < 12; i++) {
+          let x, z;
+          do { x = rand(-25, 25); z = rand(-25, 25); }
+          while (isTooClose(x, z, saplingPositions, 5) || isTooClose(x, z, usedPositions, 4));
+          saplingPositions.push({ x, z });
 
-        sapling.parentNode.removeChild(sapling);
+          const sapling = document.createElement("a-entity");
+          sapling.setAttribute("class", "sapling");
+          sapling.setAttribute("position", `${x} 0 ${z}`);
 
-        const tree = document.createElement("a-entity");
-        tree.setAttribute("gltf-model", "#healthyTree");
-        tree.setAttribute("position", `${sapPos.x} ${sapPos.y} ${sapPos.z}`);
+          const model = document.createElement("a-entity");
+          const randomScale = 0.008 * rand(0.8, 1.2);
+          model.setAttribute("gltf-model", "#saplingModel");
+          model.setAttribute("scale", `${randomScale} ${randomScale*0.6} ${randomScale}`);
+          model.setAttribute("rotation", `0 ${rand(0,360)} 0`);
+          sapling.appendChild(model);
 
-        // Much larger proportions for fully grown tree
-        const baseWidth = Math.random() * 0.5 + 1.2;
-        const baseHeight = Math.random() * 0.6 + 2.0;
+          const clickBox = document.createElement("a-box");
+          clickBox.setAttribute("width", 0.5);
+          clickBox.setAttribute("height", 1.0);
+          clickBox.setAttribute("depth", 0.5);
+          clickBox.setAttribute("material", "opacity:0; transparent:true");
+          sapling.appendChild(clickBox);
 
-        const treeScaleX = (baseWidth * 15).toFixed(3);
-        const treeScaleY = (baseHeight * 12).toFixed(3);
-        const treeScaleZ = (baseWidth * 15).toFixed(3);
-
-        tree.setAttribute("scale", "0.01 0.01 0.01");
-
-        tree.setAttribute(
-          "animation__grow",
-          `property: scale; from: 0.01 0.01 0.01; to: ${treeScaleX} ${treeScaleY} ${treeScaleZ}; dur: 2000; easing: easeOutElastic`
-        );
-
-        forest.appendChild(tree);
-      }
-
-      // --- VR controller watering ---
-      function setupWatering(handId) {
-        const hand = document.getElementById(handId);
-        hand.addEventListener("triggerdown", () => {
-          const handPos = new THREE.Vector3();
-          hand.object3D.getWorldPosition(handPos);
-
-          saplings.querySelectorAll(".sapling").forEach(s => {
-            const pos = new THREE.Vector3();
-            s.object3D.getWorldPosition(pos);
-            if (handPos.distanceTo(pos) < 3) growIntoTree(s);
+          sapling.addEventListener("click", (evt) => {
+            if (evt.detail.cursorEl) {
+              createWateringEffect(sapling);
+              setTimeout(() => {
+                growIntoTree(sapling);
+                updateProgress();
+              }, 1000);
+            }
           });
-        });
-      }
+          saplings.appendChild(sapling);
+        }
 
-      setupWatering("leftHand");
-      setupWatering("rightHand");
-    });
-  </script>
-</a-scene>
+        function createWateringEffect(sapling) {
+          for (let i = 0; i < 15; i++) {
+            const particle = document.createElement("a-sphere");
+            particle.setAttribute("radius", 0.08);
+            particle.setAttribute("material", "color:#00bfff; opacity:0.9; transparent:true");
+            const offsetX = rand(-0.4,0.4), offsetZ = rand(-0.4,0.4), startY = rand(1.2,1.8);
+            particle.setAttribute("position", `${offsetX} ${startY} ${offsetZ}`);
+            particle.setAttribute("animation__fall", 
+              `property: position; to: ${offsetX} 0 ${offsetZ}; dur: 800; easing: easeInQuad`);
+            sapling.appendChild(particle);
+            setTimeout(() => particle.remove(), 1000);
+          }
+        }
+
+        function growIntoTree(sapling) {
+          if (sapling.getAttribute("grown")) return;
+          sapling.setAttribute("grown", true);
+
+          const sapPos = new THREE.Vector3();
+          sapling.object3D.getWorldPosition(sapPos);
+          sapling.remove();
+
+          const tree = document.createElement("a-entity");
+          tree.setAttribute("gltf-model", "#healthyTree");
+          tree.setAttribute("position", `${sapPos.x} ${sapPos.y} ${sapPos.z}`);
+          const treeScale = `${(Math.random()*0.5+1.2)*15} ${(Math.random()*0.6+2.0)*12} ${(Math.random()*0.5+1.2)*15}`;
+          tree.setAttribute("scale", "0.01 0.01 0.01");
+          tree.setAttribute("animation__grow",
+            `property: scale; from: 0.01 0.01 0.01; to: ${treeScale}; dur: 2000; easing: easeOutElastic`);
+          forest.appendChild(tree);
+        }
+
+        function transformToGreenForest() {
+          sky.setAttribute("color", "#87CEEB");  // light blue sky
+          ground.setAttribute("color", "#2e8b57"); // green ground
+          forest.innerHTML = "";
+          saplings.innerHTML = "";
+
+          for (let i = 0; i < 40; i++) {
+            const x = rand(-40, 40), z = rand(-40, 40);
+            const tree = document.createElement("a-entity");
+            tree.setAttribute("gltf-model", "#healthyTree");
+            const s = rand(10, 18);
+            tree.setAttribute("scale", `${s} ${s} ${s}`);
+            tree.setAttribute("position", `${x} 0 ${z}`);
+            tree.setAttribute("rotation", `0 ${rand(0,360)} 0`);
+            forest.appendChild(tree);
+          }
+
+          message.style.display = "block";
+        }
+
+      });
+    </script>
+  </a-scene>
 </body>
 </html>
