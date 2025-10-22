@@ -31,10 +31,10 @@
 
         <!-- 
           CAMERA & CURSOR
-          This is the user's viewpoint. The cursor provides a reticle and enables click events 
-          on objects in the scene.
+          This is the user's viewpoint. We've added wasd-controls for standard desktop movement.
+          The cursor provides a reticle and enables click events on objects in the scene.
         -->
-        <a-entity id="cameraRig" position="0 1.6 0">
+        <a-entity id="cameraRig" position="0 1.6 0" wasd-controls>
             <a-camera>
                 <a-cursor
                     raycaster="objects: .clickable"
@@ -94,12 +94,13 @@
     <script>
         // This script adds the interactivity to the portals.
         document.addEventListener('DOMContentLoaded', () => {
+            const cursor = document.querySelector('a-cursor');
             const glacierPortal = document.querySelector('#glacier-portal');
             const trashPortal = document.querySelector('#trash-portal');
             const forestPortal = document.querySelector('#forest-portal');
 
             // --- Event Listeners for Navigation ---
-            // When a portal is clicked, it navigates to the corresponding page.
+            // When a portal is clicked (with a mouse or VR controller), it navigates to the corresponding page.
             glacierPortal.addEventListener('click', () => {
                 window.location.href = './glacier/index.html';
             });
@@ -113,18 +114,20 @@
             });
 
             // --- Event Listeners for Visual Feedback ---
-            // When the cursor hovers over a portal, it gets slightly larger.
-            // When the cursor leaves, it shrinks back to its original size.
+            // When the cursor hovers over a portal, it gets slightly larger and the cursor changes color.
+            // When the cursor leaves, everything returns to its original state. This works for both mouse and VR.
             const portals = document.querySelectorAll('.portal');
             portals.forEach(portal => {
                 const originalScale = portal.getAttribute('scale');
 
                 portal.addEventListener('mouseenter', () => {
                     portal.setAttribute('scale', '1.1 1.1 1.1');
+                    if (cursor) cursor.setAttribute('cursor', 'color', '#facc15'); // Highlight cursor color
                 });
 
                 portal.addEventListener('mouseleave', () => {
                     portal.setAttribute('scale', originalScale);
+                    if (cursor) cursor.setAttribute('cursor', 'color', '#FFFFFF'); // Reset cursor color
                 });
             });
         });
