@@ -3,47 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A-Frame Project Showcase</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>VR Project Showcase Hub</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
+        /* Basic styles to ensure the scene fills the entire screen */
+        body { margin: 0; }
+        a-scene { height: 100vh; width: 100vw; }
     </style>
 </head>
-<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
-    <div class="text-center p-8">
-        <h1 class="text-5xl font-bold mb-4">A-Frame VR Showcase</h1>
-        <p class="text-xl text-gray-400 mb-12">Select an experience to begin</p>
+<body>
+    <a-scene>
+        <!-- 
+          ASSETS 
+          Pre-loading assets can improve performance.
+        -->
+        <a-assets></a-assets>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <!-- Card 1: Glacier Melt Project (React) -->
-            <a href="./Glacier/index.html" class="card bg-gray-800 rounded-lg p-8 block text-left border border-gray-700">
-                <h2 class="text-2xl font-bold mb-2 text-cyan-400">Glacier Melt Visualization</h2>
-                <p class="text-gray-400">An interactive WebXR experience built with React and A-Frame demonstrating the impact of climate change.</p>
-            </a>
+        <!-- 
+          ENVIRONMENT
+          We use the environment component to quickly create a beautiful and immersive background.
+          The 'dream' preset provides a nice, abstract space for our lobby.
+        -->
+        <a-entity 
+            environment="preset: dream; ground: spikes; groundColor: #1a202c; groundColor2: #2d3748; skyColor: #1a202c; horizonColor: #4a5568; sunPosition: 0 1 -10">
+        </a-entity>
 
-            <!-- Card 2: Trash Segregation Game -->
-            <a href="./Trash_Game.html" class="card bg-gray-800 rounded-lg p-8 block text-left border border-gray-700">
-                <h2 class="text-2xl font-bold mb-2 text-emerald-400">Trash Segregation Game</h2>
-                <p class="text-gray-400">A gamified A-Frame scene where you sort different types of trash into the correct bins in a forest environment.</p>
-            </a>
+        <!-- 
+          CAMERA & CURSOR
+          This is the user's viewpoint. The cursor provides a reticle and enables click events 
+          on objects in the scene.
+        -->
+        <a-entity id="cameraRig" position="0 1.6 0">
+            <a-camera>
+                <a-cursor
+                    raycaster="objects: .clickable"
+                    cursor-visible="true"
+                    cursor-opacity="1"
+                    cursor-color="#FFFFFF"
+                    cursor-maxdist="10">
+                </a-cursor>
+            </a-camera>
+        </a-entity>
+        
+        <!-- 
+          MAIN TITLE
+          A title floating in the 3D space to welcome the user.
+        -->
+        <a-text 
+            value="VR Showcase" 
+            position="0 3 -4" 
+            align="center" 
+            width="8" 
+            color="#FFFFFF">
+        </a-text>
+        <a-text 
+            value="Look at a portal and click to enter an experience" 
+            position="0 2.6 -4" 
+            align="center" 
+            width="5" 
+            color="#d1d5db">
+        </a-text>
 
-            <!-- Card 3: Deforestation Simulation -->
-            <a href="./Forest_Environment.html" class="card bg-gray-800 rounded-lg p-8 block text-left border border-gray-700">
-                <h2 class="text-2xl font-bold mb-2 text-amber-400">Deforestation & Re-growth</h2>
-                <p class="text-gray-400">A simulation showing a deforested landscape. Interact with saplings to water them and grow a new forest.</p>
-            </a>
-        </div>
-    </div>
+        <!-- 
+          INTERACTIVE PORTALS
+          These are the 3D objects that will act as links to your other pages.
+          They are positioned in a semi-circle in front of the user.
+        -->
+
+        <!-- Portal 1: Glacier Melt -->
+        <a-entity id="glacier-portal" class="clickable portal" position="-4 1.6 -4" scale="1 1 1">
+            <a-cylinder color="#60a5fa" radius="1" height="0.2"></a-cylinder>
+            <a-text value="Glacier Melt Visualization" align="center" position="0 1 0" width="5"></a-text>
+        </a-entity>
+
+        <!-- Portal 2: Trash Game -->
+        <a-entity id="trash-portal" class="clickable portal" position="0 1.6 -4.5" scale="1 1 1">
+            <a-cylinder color="#4ade80" radius="1" height="0.2"></a-cylinder>
+            <a-text value="Trash Segregation Game" align="center" position="0 1 0" width="5"></a-text>
+        </a-entity>
+
+        <!-- Portal 3: Deforestation -->
+        <a-entity id="forest-portal" class="clickable portal" position="4 1.6 -4" scale="1 1 1">
+            <a-cylinder color="#facc15" radius="1" height="0.2"></a-cylinder>
+            <a-text value="Deforestation & Re-growth" align="center" position="0 1 0" width="5"></a-text>
+        </a-entity>
+
+    </a-scene>
+
+    <script>
+        // This script adds the interactivity to the portals.
+        document.addEventListener('DOMContentLoaded', () => {
+            const glacierPortal = document.querySelector('#glacier-portal');
+            const trashPortal = document.querySelector('#trash-portal');
+            const forestPortal = document.querySelector('#forest-portal');
+
+            // --- Event Listeners for Navigation ---
+            // When a portal is clicked, it navigates to the corresponding page.
+            glacierPortal.addEventListener('click', () => {
+                window.location.href = './glacier/index.html';
+            });
+
+            trashPortal.addEventListener('click', () => {
+                window.location.href = './trash_game.html';
+            });
+
+            forestPortal.addEventListener('click', () => {
+                window.location.href = './deforestation_sim.html';
+            });
+
+            // --- Event Listeners for Visual Feedback ---
+            // When the cursor hovers over a portal, it gets slightly larger.
+            // When the cursor leaves, it shrinks back to its original size.
+            const portals = document.querySelectorAll('.portal');
+            portals.forEach(portal => {
+                const originalScale = portal.getAttribute('scale');
+
+                portal.addEventListener('mouseenter', () => {
+                    portal.setAttribute('scale', '1.1 1.1 1.1');
+                });
+
+                portal.addEventListener('mouseleave', () => {
+                    portal.setAttribute('scale', originalScale);
+                });
+            });
+        });
+    </script>
 </body>
 </html>
 
