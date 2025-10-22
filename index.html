@@ -33,9 +33,10 @@
           CAMERA & CURSOR
           This is the user's viewpoint. We've added wasd-controls for standard desktop movement.
           The cursor provides a reticle and enables click events on objects in the scene.
+          look-controls enables looking around with the mouse.
         -->
         <a-entity id="cameraRig" position="0 1.6 0" wasd-controls>
-            <a-camera>
+            <a-camera look-controls>
                 <a-cursor
                     raycaster="objects: .clickable"
                     cursor-visible="true"
@@ -68,25 +69,28 @@
         <!-- 
           INTERACTIVE PORTALS
           These are the 3D objects that will act as links to your other pages.
-          They are positioned in a semi-circle in front of the user.
+          They now include a larger, invisible click target plane.
         -->
 
         <!-- Portal 1: Glacier Melt -->
-        <a-entity id="glacier-portal" class="clickable portal" position="-4 1.6 -4" scale="1 1 1">
+        <a-entity id="glacier-portal" class="portal" position="-4 1.6 -4" scale="1 1 1">
             <a-cylinder color="#60a5fa" radius="1" height="0.2"></a-cylinder>
             <a-text value="Glacier Melt Visualization" align="center" position="0 1 0" width="5"></a-text>
+            <a-plane class="clickable" width="2.5" height="2.5" position="0 0.5 0.1" material="visible: false"></a-plane>
         </a-entity>
 
         <!-- Portal 2: Trash Game -->
-        <a-entity id="trash-portal" class="clickable portal" position="0 1.6 -4.5" scale="1 1 1">
+        <a-entity id="trash-portal" class="portal" position="0 1.6 -4.5" scale="1 1 1">
             <a-cylinder color="#4ade80" radius="1" height="0.2"></a-cylinder>
             <a-text value="Trash Segregation Game" align="center" position="0 1 0" width="5"></a-text>
+            <a-plane class="clickable" width="2.5" height="2.5" position="0 0.5 0.1" material="visible: false"></a-plane>
         </a-entity>
 
         <!-- Portal 3: Deforestation -->
-        <a-entity id="forest-portal" class="clickable portal" position="4 1.6 -4" scale="1 1 1">
+        <a-entity id="forest-portal" class="portal" position="4 1.6 -4" scale="1 1 1">
             <a-cylinder color="#facc15" radius="1" height="0.2"></a-cylinder>
             <a-text value="Deforestation & Re-growth" align="center" position="0 1 0" width="5"></a-text>
+            <a-plane class="clickable" width="2.5" height="2.5" position="0 0.5 0.1" material="visible: false"></a-plane>
         </a-entity>
 
     </a-scene>
@@ -102,15 +106,15 @@
             // --- Event Listeners for Navigation ---
             // When a portal is clicked (with a mouse or VR controller), it navigates to the corresponding page.
             glacierPortal.addEventListener('click', () => {
-                window.location.href = './glacier/index.html';
+                window.location.href = './Glacier/index.html';
             });
 
             trashPortal.addEventListener('click', () => {
-                window.location.href = './trash_game.html';
+                window.location.href = './Trash_Game.html';
             });
 
             forestPortal.addEventListener('click', () => {
-                window.location.href = './deforestation_sim.html';
+                window.location.href = './Forest_Environment.html';
             });
 
             // --- Event Listeners for Visual Feedback ---
