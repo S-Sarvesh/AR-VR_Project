@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8">
   <title>Deforested Forest with Growable Saplings</title>
-  <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
+  
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
   <style>
     #uiContainer {
@@ -73,8 +74,8 @@
 <body>
   <div id="uiContainer">
     <h3>🌱 Controls</h3>
-    <p><strong>Move:</strong> W / A / S / D keys</p>
-    <p><strong>Look Around:</strong> Mouse</p>
+    <p><strong>Move:</strong> W/A/S/D or VR Thumbstick</p>
+    <p><strong>Look Around:</strong> Mouse or VR Headset</p>
     <p><strong>Water Saplings:</strong> Left-click or VR Trigger</p>
     <div id="progressBarContainer">
       <div id="progressBarFill"></div>
@@ -100,10 +101,10 @@
     <a-sky id="sceneSky" color="#9e9ea0"></a-sky>
     <a-plane id="groundPlane" rotation="-90 0 0" width="200" height="200" color="#6b4f3b"></a-plane>
 
-    <a-entity id="rig" position="0 1.6 4">
-      <a-entity camera look-controls wasd-controls cursor="rayOrigin: mouse"></a-entity>
-      <a-entity id="leftHand" hand-controls="hand: left"></a-entity>
-      <a-entity id="rightHand" hand-controls="hand: right"></a-entity>
+    <a-entity id="rig" position="0 1.6 4" movement-controls>
+      <a-entity camera look-controls></a-entity>
+      <a-entity id="leftHand" hand-controls="hand: left" laser-controls="hand: left" raycaster="objects: .clickable; far: 5;"></a-entity>
+      <a-entity id="rightHand" hand-controls="hand: right" laser-controls="hand: right" raycaster="objects: .clickable; far: 5;"></a-entity>
     </a-entity>
 
     <a-entity id="forestContainer"></a-entity>
@@ -190,20 +191,21 @@
           sapling.appendChild(model);
 
           const clickBox = document.createElement("a-box");
+          // FIX 3A: Added 'clickable' class for the raycaster
+          clickBox.setAttribute("class", "clickable");
           clickBox.setAttribute("width", 0.5);
           clickBox.setAttribute("height", 1.0);
           clickBox.setAttribute("depth", 0.5);
           clickBox.setAttribute("material", "opacity:0; transparent:true");
           sapling.appendChild(clickBox);
 
+          // FIX 3B: Removed 'if (evt.detail.cursorEl)' check
           sapling.addEventListener("click", (evt) => {
-            if (evt.detail.cursorEl) {
-              createWateringEffect(sapling);
-              setTimeout(() => {
-                growIntoTree(sapling);
-                updateProgress();
-              }, 1000);
-            }
+            createWateringEffect(sapling);
+            setTimeout(() => {
+              growIntoTree(sapling);
+              updateProgress();
+            }, 1000);
           });
           saplings.appendChild(sapling);
         }
@@ -241,7 +243,7 @@
         }
 
         function transformToGreenForest() {
-          sky.setAttribute("color", "#87CEEB");  // light blue sky
+          sky.setAttribute("color", "#87CEEB");   // light blue sky
           ground.setAttribute("color", "#2e8b57"); // green ground
           forest.innerHTML = "";
           saplings.innerHTML = "";
