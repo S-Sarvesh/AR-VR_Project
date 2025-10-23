@@ -5,16 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Trash Segregation – Forest Playground</title>
 
+  <!-- Core A-Frame and Extensions -->
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  
   <script src="https://cdn.jsdelivr.net/npm/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
-  <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
-  
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/super-hands@4.0.5/dist/super-hands.min.js"></script>
 
   <style>
-    html, body { margin:0; height:100%; overflow:hidden;}
+    html, body { margin: 0; height: 100%; overflow: hidden; }
     a-scene { width: 100%; height: 100%; }
     #overlay {
       position: absolute; top: 10px; left: 10px; z-index: 999;
@@ -22,7 +21,10 @@
       min-width: 280px; max-width: 400px;
       font-size: 1.12em;
     }
-    #overlay button{ margin-top:8px; padding:7px 14px; border-radius:7px; border:0; cursor:pointer; background:#3fa34d; color:#fff; font-weight:bold; }
+    #overlay button {
+      margin-top: 8px; padding: 7px 14px; border-radius: 7px; border: 0;
+      cursor: pointer; background: #3fa34d; color: #fff; font-weight: bold;
+    }
   </style>
 </head>
 
@@ -38,23 +40,26 @@
 </div>
 
 <a-scene physics="driver: ammo; gravity: -9.8">
-      <a-entity environment="preset: forest; groundColor: #6fbf4b; fog: 0.9"></a-entity>
+  <!-- Environment -->
+  <a-entity environment="preset: forest; groundColor: #6fbf4b; fog: 0.9"></a-entity>
+  <a-light type="ambient" color="#bbb"></a-light>
+  <a-light type="directional" position="2 4 1" intensity="1"></a-light>
 
-    <a-entity id="cameraRig">
-    <a-camera id="camera" position="0 1.6 10">
+  <!-- Camera Rig with Controls -->
+  <a-entity id="cameraRig" movement-controls="fly: false" wasd-controls>
+    <a-camera id="camera" position="0 1.6 4">
       <a-entity 
         cursor="rayOrigin: mouse; fuse: false" 
         raycaster="objects: .interactable" 
-        position="0 0 -1"
-        grab> 
+        position="0 0 -1">
       </a-entity>
     </a-camera>
-
-    <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .interactable" grab></a-entity>
-    <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .interactable" grab></a-entity>
+    <a-entity id="leftHand" laser-controls="hand: left" super-hands></a-entity>
+    <a-entity id="rightHand" laser-controls="hand: right" super-hands></a-entity>
   </a-entity>
 
-    <a-cylinder id="bioBin" class="bin" position="-10 1 -4" radius="0.9" height="1.4" color="#388e3c" static-body data-accept="bio">
+  <!-- Trash Bins -->
+  <a-cylinder id="bioBin" class="bin" position="-10 1 -4" radius="0.9" height="1.4" color="#388e3c" static-body data-accept="bio">
     <a-text value="BIO" align="center" position="0 1.1 0.15" color="#fff" width="3" look-at="#camera"></a-text>
   </a-cylinder>
 
@@ -73,7 +78,6 @@
   <a-cylinder id="glassBin" class="bin" position="10 1 -4" radius="0.9" height="1.4" color="#1565c0" static-body data-accept="glass">
     <a-text value="GLASS" align="center" position="0 1.1 0.15" color="#fff" width="3" look-at="#camera"></a-text>
   </a-cylinder>
-
 </a-scene>
 
 <script>
@@ -82,7 +86,10 @@ const scoreSpan = document.getElementById('score');
 const camera = document.getElementById('camera');
 let score = 0;
 
-function updateScore(delta) { score += delta; scoreSpan.textContent = score; }
+function updateScore(delta) {
+  score += delta;
+  scoreSpan.textContent = score;
+}
 
 const bins = [
   { el: document.getElementById('bioBin'), accept: 'bio' },
@@ -93,74 +100,34 @@ const bins = [
 ];
 
 function spawnTrash(count = 8) {
-  // Local 3D models referenced here — use your own .glb files placed inside models/
   const garbageTypes = [
-    {
-      type: 'bio',
-      model: 'models/fruits.glb',
-      label: 'Food/Leaf'
-    },
-    {
-      type: 'nonbio',
-      model: 'models/plastic.glb',
-      label: 'Plastic/Can'
-    },
-    {
-      type: 'paper',
-      model: 'models/paper_boat.glb',
-      label: 'Paper/Cardboard'
-    },
-    {
-      type: 'metal',
-      model: 'models/metal.glb',
-      label: 'Metal Scrap'
-    },
-    {
-      type: 'glass',
-      model: 'models/glass.glb',
-      label: 'Glass Bottle'
-    }
+    { type: 'bio', model: 'models/fruits.glb', label: 'Food/Leaf' },
+    { type: 'nonbio', model: 'models/plastic.glb', label: 'Plastic/Can' },
+    { type: 'paper', model: 'models/paper_boat.glb', label: 'Paper/Cardboard' },
+    { type: 'metal', model: 'models/metal.glb', label: 'Metal Scrap' },
+    { type: 'glass', model: 'models/glass.glb', label: 'Glass Bottle' }
   ];
 
   for (let i = 0; i < count; i++) {
     const rand = garbageTypes[Math.floor(Math.random() * garbageTypes.length)];
     let x = (Math.random() * 14 - 7);
-    if (Math.abs(x) > 3.5) x = x * 0.6;
+    const z = (Math.random() * 4 - 6);
     const ent = document.createElement('a-entity');
     ent.setAttribute('class', 'trash interactable');
-    
-    // --- THIS IS THE FIX ---
-    // Changed the 'y' position from 1 to 0.2
-    ent.setAttribute('position', `${x.toFixed(2)} 0.2 ${(Math.random() * 2 - 1.5).toFixed(2)}`);
-    // --- END OF FIX ---
+    ent.setAttribute('position', `${x.toFixed(2)} 0.3 ${z.toFixed(2)}`);
 
-    // If model exists, load it locally
     if (rand.model) {
       ent.setAttribute('gltf-model', rand.model);
-      
-      if (rand.type === 'paper' || rand.type === 'glass') {
-        ent.setAttribute('scale', '1.5 1.5 1.5'); // Larger scale
-      } else {
-        ent.setAttribute('scale', '0.8 0.8 0.8'); // Original scale for others
-      }
-
       ent.setAttribute('rotation', '0 45 0');
+      ent.setAttribute('scale', rand.type === 'paper' || rand.type === 'glass' ? '1.5 1.5 1.5' : '0.8 0.8 0.8');
     } else {
-      // --- FALLBACK IF MODEL IS MISSING ---
       const box = document.createElement('a-box');
-
-      if (rand.type === 'paper' || rand.type === 'glass') {
-        box.setAttribute('scale', '0.7 0.7 0.7'); // Larger scale
-      } else {
-        box.setAttribute('scale', '0.4 0.4 0.4'); // Original scale
-      }
-
       const colors = { bio: '#388e3c', nonbio: '#b71c1c', paper: '#fbc02d', metal: '#616161', glass: '#1565c0' };
       box.setAttribute('color', colors[rand.type] || '#fff');
+      box.setAttribute('scale', rand.type === 'paper' || rand.type === 'glass' ? '0.7 0.7 0.7' : '0.4 0.4 0.4');
       ent.appendChild(box);
     }
 
-    // Add a floating text label above the model
     const label = document.createElement('a-text');
     label.setAttribute('value', rand.label);
     label.setAttribute('align', 'center');
@@ -170,62 +137,52 @@ function spawnTrash(count = 8) {
     label.setAttribute('look-at', '#camera');
     ent.appendChild(label);
 
-    ent.setAttribute('dynamic-body', 'mass: 0.6'); 
-    ent.setAttribute('grabbable', ''); 
+    ent.setAttribute('dynamic-body', 'mass: 0.6');
     ent.setAttribute('data-type', rand.type);
-    
-    
-    // For mouse dragging: disable look-controls and check drop on release
+    ent.setAttribute('grabbable', '');
+
+    // Mouse grabbing fallback
     ent.addEventListener('dragstart', () => {
       camera.setAttribute('look-controls', 'enabled', false);
     });
     ent.addEventListener('dragend', () => {
       camera.setAttribute('look-controls', 'enabled', true);
-      checkDrop(ent); // Check the drop when mouse drag ends
-    });
-
-    // For VR controller grabbing: just check drop on release
-    ent.addEventListener('grab-end', () => {
       checkDrop(ent);
     });
+
+    // VR grabbing
+    ent.addEventListener('grabend', () => checkDrop(ent));
 
     scene.appendChild(ent);
   }
 }
 
 function checkDrop(trashEl) {
-  // Use a slight delay to allow physics to settle after drop
   setTimeout(() => {
-    if (!trashEl || !trashEl.object3D) return; // Object might already be destroyed
-    
+    if (!trashEl || !trashEl.object3D) return;
     const pos = trashEl.object3D.getWorldPosition(new AFRAME.THREE.Vector3());
     for (let b of bins) {
       const binPos = b.el.object3D.getWorldPosition(new AFRAME.THREE.Vector3());
-      
-      // Check if it's close enough to the bin
       if (pos.distanceTo(binPos) < 1.2) {
         const ttype = trashEl.getAttribute('data-type');
-        if (ttype === b.accept) {
-          handleCorrect(trashEl);
-        } else {
-          handleIncorrect(trashEl);
-        }
-        return; // Stop checking once a bin is found
+        if (ttype === b.accept) handleCorrect(trashEl);
+        else handleIncorrect(trashEl);
+        return;
       }
     }
-  }, 100); // 100ms delay
+  }, 100);
 }
 
-
 function handleCorrect(el) {
-  if (!el.sceneEl) return; // Avoid errors if already removed
+  if (!el.sceneEl) return;
   updateScore(10);
   el.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 360; easing: easeInQuad');
   setTimeout(() => el.remove(), 440);
   setTimeout(() => spawnTrash(1), 580);
 }
+
 function handleIncorrect(el) {
-  if (!el.sceneEl) return; // Avoid errors if already removed
+  if (!el.sceneEl) return;
   updateScore(-5);
   el.setAttribute('animation', 'property: position; to: 0 0 -16; dur: 500');
   setTimeout(() => el.remove(), 560);
@@ -238,6 +195,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   document.querySelectorAll('.trash').forEach(t => t.remove());
   spawnTrash(8);
 });
+
 window.addEventListener('keyup', e => {
   if (e.key.toLowerCase() === 'r') {
     document.querySelectorAll('.trash').forEach(t => t.remove());
