@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Trash Segregation – Forest Playground</title>
+  <title>Trash Segregation – Forest Playground VR</title>
 
   <!-- Core A-Frame and Extensions -->
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
@@ -31,31 +31,40 @@
 <body>
 <div id="overlay">
   <div id="instructions"><strong>How to Play:</strong>
-    <br>- Grab trash objects using mouse or VR controller.
-    <br>- Drop them into the matching bin (by icon or label).
-    <br>- Correct drops score +10, incorrect -5.
+    <br>- Grab trash with VR controllers or mouse.
+    <br>- Drop into the correct bin.
+    <br>- +10 for correct, -5 for wrong.
   </div>
   <div style="margin-top:9px">Score: <span id="score">0</span></div>
   <div style="margin-top:9px"><button id="resetBtn">Reset & Respawn</button></div>
 </div>
 
-<a-scene physics="driver: ammo; gravity: -9.8">
-  <!-- Environment -->
-  <a-entity environment="preset: forest; groundColor: #6fbf4b; fog: 0.9"></a-entity>
-  <a-light type="ambient" color="#bbb"></a-light>
-  <a-light type="directional" position="2 4 1" intensity="1"></a-light>
+<a-scene physics="driver: ammo; gravity: -9.8" background="color: #b3e5fc">
+  <!-- Forest Environment -->
+  <a-entity environment="preset: forest; groundColor: #3b5d2a; groundTexture: walkerlawn; skyColor: #b3e5fc; fog: 0.9"></a-entity>
 
-  <!-- Camera Rig with Controls -->
-  <a-entity id="cameraRig" movement-controls="fly: false" wasd-controls>
-    <a-camera id="camera" position="0 1.6 4">
-      <a-entity 
-        cursor="rayOrigin: mouse; fuse: false" 
-        raycaster="objects: .interactable" 
-        position="0 0 -1">
-      </a-entity>
+  <!-- Lighting -->
+  <a-light type="ambient" color="#ccc" intensity="0.7"></a-light>
+  <a-light type="directional" position="2 5 1" intensity="0.7" color="#ffffff"></a-light>
+
+  <!-- Camera Rig: WASD + VR joystick movement -->
+  <a-entity id="cameraRig" movement-controls="speed: 0.12; fly: false; constrainToNavMesh: false">
+    <a-camera id="camera" position="0 1.6 4" look-controls="pointerLockEnabled: true">
+      <a-entity cursor="rayOrigin: mouse; fuse: false"
+                raycaster="objects: .interactable"
+                position="0 0 -1"></a-entity>
     </a-camera>
-    <a-entity id="leftHand" laser-controls="hand: left" super-hands></a-entity>
-    <a-entity id="rightHand" laser-controls="hand: right" super-hands></a-entity>
+
+    <!-- VR Hand Controllers -->
+    <a-entity id="leftHand"
+              hand-controls="hand: left; handModelStyle: lowPoly; color: #4caf50"
+              super-hands
+              sphere-collider="objects: .interactable"></a-entity>
+
+    <a-entity id="rightHand"
+              hand-controls="hand: right; handModelStyle: lowPoly; color: #4caf50"
+              super-hands
+              sphere-collider="objects: .interactable"></a-entity>
   </a-entity>
 
   <!-- Trash Bins -->
@@ -113,19 +122,13 @@ function spawnTrash(count = 8) {
     let x = (Math.random() * 14 - 7);
     const z = (Math.random() * 4 - 6);
     const ent = document.createElement('a-entity');
-    ent.setAttribute('class', 'trash interactable');
+    ent.classList.add('trash', 'interactable');
     ent.setAttribute('position', `${x.toFixed(2)} 0.3 ${z.toFixed(2)}`);
 
     if (rand.model) {
       ent.setAttribute('gltf-model', rand.model);
       ent.setAttribute('rotation', '0 45 0');
-      ent.setAttribute('scale', rand.type === 'paper' || rand.type === 'glass' ? '1.5 1.5 1.5' : '0.8 0.8 0.8');
-    } else {
-      const box = document.createElement('a-box');
-      const colors = { bio: '#388e3c', nonbio: '#b71c1c', paper: '#fbc02d', metal: '#616161', glass: '#1565c0' };
-      box.setAttribute('color', colors[rand.type] || '#fff');
-      box.setAttribute('scale', rand.type === 'paper' || rand.type === 'glass' ? '0.7 0.7 0.7' : '0.4 0.4 0.4');
-      ent.appendChild(box);
+      ent.setAttribute('scale', rand.type === 'paper' || rand.type === 'glass' ? '1.3 1.3 1.3' : '0.9 0.9 0.9');
     }
 
     const label = document.createElement('a-text');
@@ -141,16 +144,14 @@ function spawnTrash(count = 8) {
     ent.setAttribute('data-type', rand.type);
     ent.setAttribute('grabbable', '');
 
-    // Mouse grabbing fallback
-    ent.addEventListener('dragstart', () => {
-      camera.setAttribute('look-controls', 'enabled', false);
-    });
+    // Mouse grab fallback
+    ent.addEventListener('dragstart', () => camera.setAttribute('look-controls', 'enabled', false));
     ent.addEventListener('dragend', () => {
       camera.setAttribute('look-controls', 'enabled', true);
       checkDrop(ent);
     });
 
-    // VR grabbing
+    // VR grab end
     ent.addEventListener('grabend', () => checkDrop(ent));
 
     scene.appendChild(ent);
@@ -170,23 +171,21 @@ function checkDrop(trashEl) {
         return;
       }
     }
-  }, 100);
+  }, 150);
 }
 
 function handleCorrect(el) {
-  if (!el.sceneEl) return;
   updateScore(10);
   el.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 360; easing: easeInQuad');
-  setTimeout(() => el.remove(), 440);
-  setTimeout(() => spawnTrash(1), 580);
+  setTimeout(() => el.remove(), 400);
+  setTimeout(() => spawnTrash(1), 600);
 }
 
 function handleIncorrect(el) {
-  if (!el.sceneEl) return;
   updateScore(-5);
   el.setAttribute('animation', 'property: position; to: 0 0 -16; dur: 500');
   setTimeout(() => el.remove(), 560);
-  setTimeout(() => spawnTrash(1), 690);
+  setTimeout(() => spawnTrash(1), 700);
 }
 
 document.getElementById('resetBtn').addEventListener('click', () => {
@@ -194,13 +193,6 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   scoreSpan.textContent = 0;
   document.querySelectorAll('.trash').forEach(t => t.remove());
   spawnTrash(8);
-});
-
-window.addEventListener('keyup', e => {
-  if (e.key.toLowerCase() === 'r') {
-    document.querySelectorAll('.trash').forEach(t => t.remove());
-    spawnTrash(8);
-  }
 });
 
 scene.addEventListener('loaded', () => spawnTrash(8));
