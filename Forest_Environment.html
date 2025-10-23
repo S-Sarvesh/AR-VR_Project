@@ -102,7 +102,11 @@
     <a-plane id="groundPlane" rotation="-90 0 0" width="200" height="200" color="#6b4f3b"></a-plane>
 
     <a-entity id="rig" position="0 1.6 4" movement-controls>
-      <a-entity camera look-controls></a-entity>
+      <a-entity camera look-controls
+                cursor="rayOrigin: mouse;"
+                raycaster="objects: .clickable; far: 5;">
+      </a-entity>
+      
       <a-entity id="leftHand" hand-controls="hand: left" laser-controls="hand: left" raycaster="objects: .clickable; far: 5;"></a-entity>
       <a-entity id="rightHand" hand-controls="hand: right" laser-controls="hand: right" raycaster="objects: .clickable; far: 5;"></a-entity>
     </a-entity>
@@ -191,16 +195,19 @@
           sapling.appendChild(model);
 
           const clickBox = document.createElement("a-box");
-          // FIX 3A: Added 'clickable' class for the raycaster
-          clickBox.setAttribute("class", "clickable");
+          // FIX 3: Added 'clickable' class for all raycasters
+          clickBox.setAttribute("class", "clickable"); 
           clickBox.setAttribute("width", 0.5);
           clickBox.setAttribute("height", 1.0);
           clickBox.setAttribute("depth", 0.5);
           clickBox.setAttribute("material", "opacity:0; transparent:true");
           sapling.appendChild(clickBox);
 
-          // FIX 3B: Removed 'if (evt.detail.cursorEl)' check
-          sapling.addEventListener("click", (evt) => {
+          // FIX 5: Moved listener from 'sapling' to 'clickBox'
+          // This makes it work reliably for both mouse and VR trigger
+          clickBox.addEventListener("click", (evt) => {
+            evt.stopPropagation(); // Stop event from bubbling
+            
             createWateringEffect(sapling);
             setTimeout(() => {
               growIntoTree(sapling);
