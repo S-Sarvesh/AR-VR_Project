@@ -6,136 +6,114 @@
     <title>VR Project Showcase Hub</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
     <style>
-        /* Basic styles to ensure the scene fills the entire screen */
         body { margin: 0; }
         a-scene { height: 100vh; width: 100vw; }
     </style>
 </head>
 <body>
-    <a-scene>
-        <!-- 
-          ASSETS 
-          Pre-loading assets can improve performance.
-        -->
-        <a-assets></a-assets>
+<a-scene vr-mode-ui="enabled: true">
 
-        <!-- 
-          ENVIRONMENT
-          We use the environment component to quickly create a beautiful and immersive background.
-          The 'dream' preset provides a nice, abstract space for our lobby.
-        -->
-        <a-entity 
-            environment="preset: dream; ground: spikes; groundColor: #1a202c; groundColor2: #2d3748; skyColor: #1a202c; horizonColor: #4a5568; sunPosition: 0 1 -10">
-        </a-entity>
+    <!-- ASSETS -->
+    <a-assets></a-assets>
 
-        <!-- 
-          CAMERA & CURSOR
-          This is the user's viewpoint. We've added wasd-controls for standard desktop movement.
-          The cursor provides a reticle and enables click events on objects in the scene.
-          look-controls enables looking around with the mouse.
-        -->
-        <a-entity id="cameraRig" position="0 1.6 0" wasd-controls>
-            <a-camera look-controls>
-                <a-cursor
-                    raycaster="objects: .clickable"
-                    cursor-visible="true"
-                    cursor-opacity="1"
-                    cursor-color="#FFFFFF"
-                    cursor-maxdist="10">
-                </a-cursor>
-            </a-camera>
-        </a-entity>
-        
-        <!-- 
-          MAIN TITLE
-          A title floating in the 3D space to welcome the user.
-        -->
-        <a-text 
-            value="VR Showcase" 
-            position="0 3 -4" 
-            align="center" 
-            width="8" 
-            color="#FFFFFF">
-        </a-text>
-        <a-text 
-            value="Look at a portal and click to enter an experience" 
-            position="0 2.6 -4" 
-            align="center" 
-            width="5" 
-            color="#d1d5db">
-        </a-text>
+    <!-- ENVIRONMENT -->
+    <a-entity 
+        environment="preset: dream; ground: spikes; groundColor: #1a202c; groundColor2: #2d3748; skyColor: #1a202c; horizonColor: #4a5568; sunPosition: 0 1 -10">
+    </a-entity>
 
-        <!-- 
-          INTERACTIVE PORTALS
-          These are the 3D objects that will act as links to your other pages.
-          They now include a larger, invisible click target plane.
-        -->
+    <!-- CAMERA RIG -->
+    <a-entity id="cameraRig" position="0 1.6 0" 
+              wasd-controls 
+              universal-controls="movementEnabled: true; fly: false; speed: 0.1;">
+        <a-camera look-controls>
+            <a-cursor
+                raycaster="objects: .clickable"
+                cursor-visible="true"
+                cursor-opacity="1"
+                cursor-color="#FFFFFF"
+                cursor-maxdist="10">
+            </a-cursor>
+        </a-camera>
 
-        <!-- Portal 1: Glacier Melt -->
-        <a-entity id="glacier-portal" class="portal" position="-4 1.6 -4" scale="1 1 1">
-            <a-cylinder color="#60a5fa" radius="1" height="0.2"></a-cylinder>
-            <a-text value="Glacier Melt Visualization" align="center" position="0 1 0" width="5"></a-text>
-            <a-plane class="clickable" width="2.5" height="2.5" position="0 0.5 0.1" material="visible: false"></a-plane>
-        </a-entity>
+        <!-- VR CONTROLLERS -->
+        <a-entity hand-controls="hand: left" 
+                  vive-controls="hand: left" 
+                  oculus-touch-controls="hand: left" 
+                  windows-motion-controls="hand: left" 
+                  daydream-controls="hand: left" 
+                  valve-index-controls="hand: left"></a-entity>
+                  
+        <a-entity hand-controls="hand: right" 
+                  vive-controls="hand: right" 
+                  oculus-touch-controls="hand: right" 
+                  windows-motion-controls="hand: right" 
+                  daydream-controls="hand: right" 
+                  valve-index-controls="hand: right"></a-entity>
+    </a-entity>
 
-        <!-- Portal 2: Trash Game -->
-        <a-entity id="trash-portal" class="portal" position="0 1.6 -4.5" scale="1 1 1">
-            <a-cylinder color="#4ade80" radius="1" height="0.2"></a-cylinder>
-            <a-text value="Trash Segregation Game" align="center" position="0 1 0" width="5"></a-text>
-            <a-plane class="clickable" width="2.5" height="2.5" position="0 0.5 0.1" material="visible: false"></a-plane>
-        </a-entity>
+    <!-- MAIN TITLE -->
+    <a-text 
+        value="VR Showcase" 
+        position="0 3 -4" 
+        align="center" 
+        width="8" 
+        color="#FFFFFF">
+    </a-text>
+    <a-text 
+        value="Look at a portal and click to enter an experience" 
+        position="0 2.6 -4" 
+        align="center" 
+        width="5" 
+        color="#d1d5db">
+    </a-text>
 
-        <!-- Portal 3: Deforestation -->
-        <a-entity id="forest-portal" class="portal" position="4 1.6 -4" scale="1 1 1">
-            <a-cylinder color="#facc15" radius="1" height="0.2"></a-cylinder>
-            <a-text value="Deforestation & Re-growth" align="center" position="0 1 0" width="5"></a-text>
-            <a-plane class="clickable" width="2.5" height="2.5" position="0 0.5 0.1" material="visible: false"></a-plane>
-        </a-entity>
+    <!-- PORTALS -->
+    <a-entity id="glacier-portal" class="portal" position="-4 1.6 -4" scale="1 1 1">
+        <a-cylinder color="#60a5fa" radius="1" height="0.2"></a-cylinder>
+        <a-text value="Glacier Melt Visualization" align="center" position="0 1 0" width="5"></a-text>
+        <a-plane class="clickable" width="2.5" height="2.5" position="0 0.5 0.1" material="visible: false"></a-plane>
+    </a-entity>
 
-    </a-scene>
+    <a-entity id="trash-portal" class="portal" position="0 1.6 -4.5" scale="1 1 1">
+        <a-cylinder color="#4ade80" radius="1" height="0.2"></a-cylinder>
+        <a-text value="Trash Segregation Game" align="center" position="0 1 0" width="5"></a-text>
+        <a-plane class="clickable" width="2.5" height="2.5" position="0 0.5 0.1" material="visible: false"></a-plane>
+    </a-entity>
 
-    <script>
-        // This script adds the interactivity to the portals.
-        document.addEventListener('DOMContentLoaded', () => {
-            const cursor = document.querySelector('a-cursor');
-            const glacierPortal = document.querySelector('#glacier-portal');
-            const trashPortal = document.querySelector('#trash-portal');
-            const forestPortal = document.querySelector('#forest-portal');
+    <a-entity id="forest-portal" class="portal" position="4 1.6 -4" scale="1 1 1">
+        <a-cylinder color="#facc15" radius="1" height="0.2"></a-cylinder>
+        <a-text value="Deforestation & Re-growth" align="center" position="0 1 0" width="5"></a-text>
+        <a-plane class="clickable" width="2.5" height="2.5" position="0 0.5 0.1" material="visible: false"></a-plane>
+    </a-entity>
 
-            // --- Event Listeners for Navigation ---
-            // When a portal is clicked (with a mouse or VR controller), it navigates to the corresponding page.
-            glacierPortal.addEventListener('click', () => {
-                window.location.href = './Glacier/index.html';
+</a-scene>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const cursor = document.querySelector('a-cursor');
+        const glacierPortal = document.querySelector('#glacier-portal');
+        const trashPortal = document.querySelector('#trash-portal');
+        const forestPortal = document.querySelector('#forest-portal');
+
+        glacierPortal.addEventListener('click', () => { window.location.href = './Glacier.html'; });
+        trashPortal.addEventListener('click', () => { window.location.href = './Trash_Game.html'; });
+        forestPortal.addEventListener('click', () => { window.location.href = './Forest_Environment.html'; });
+
+        const portals = document.querySelectorAll('.portal');
+        portals.forEach(portal => {
+            const originalScale = portal.getAttribute('scale');
+            portal.addEventListener('mouseenter', () => {
+                portal.setAttribute('scale', '1.1 1.1 1.1');
+                if (cursor) cursor.setAttribute('cursor', 'color', '#facc15');
             });
-
-            trashPortal.addEventListener('click', () => {
-                window.location.href = './Trash_Game.html';
-            });
-
-            forestPortal.addEventListener('click', () => {
-                window.location.href = './Forest_Environment.html';
-            });
-
-            // --- Event Listeners for Visual Feedback ---
-            // When the cursor hovers over a portal, it gets slightly larger and the cursor changes color.
-            // When the cursor leaves, everything returns to its original state. This works for both mouse and VR.
-            const portals = document.querySelectorAll('.portal');
-            portals.forEach(portal => {
-                const originalScale = portal.getAttribute('scale');
-
-                portal.addEventListener('mouseenter', () => {
-                    portal.setAttribute('scale', '1.1 1.1 1.1');
-                    if (cursor) cursor.setAttribute('cursor', 'color', '#facc15'); // Highlight cursor color
-                });
-
-                portal.addEventListener('mouseleave', () => {
-                    portal.setAttribute('scale', originalScale);
-                    if (cursor) cursor.setAttribute('cursor', 'color', '#FFFFFF'); // Reset cursor color
-                });
+            portal.addEventListener('mouseleave', () => {
+                portal.setAttribute('scale', originalScale);
+                if (cursor) cursor.setAttribute('cursor', 'color', '#FFFFFF');
             });
         });
-    </script>
+    });
+</script>
 </body>
 </html>
-

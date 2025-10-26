@@ -6,85 +6,9 @@
   
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
-
-  <style>
-    #uiContainer {
-      position: fixed;
-      top: 15px;
-      left: 15px;
-      background: rgba(0, 0, 0, 0.6);
-      color: #fff;
-      font-family: Arial, sans-serif;
-      padding: 12px 16px;
-      border-radius: 10px;
-      max-width: 230px;
-      z-index: 10;
-      box-shadow: 0 0 10px rgba(0,0,0,0.4);
-    }
-    #uiContainer h3 {
-      margin: 0 0 8px 0;
-      font-size: 16px;
-      text-align: center;
-      color: #7cf57c;
-    }
-    #uiContainer p {
-      font-size: 13px;
-      line-height: 1.4em;
-      margin: 3px 0;
-    }
-    #progressBarContainer {
-      margin-top: 10px;
-      width: 100%;
-      height: 10px;
-      background-color: rgba(255,255,255,0.2);
-      border-radius: 5px;
-      overflow: hidden;
-    }
-    #progressBarFill {
-      height: 100%;
-      width: 0%;
-      background-color: #4caf50;
-      transition: width 0.5s ease;
-    }
-
-    #afforestationMessage {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 32px;
-      color: #ffffff;
-      text-align: center;
-      background: rgba(0,0,0,0.6);
-      padding: 20px 30px;
-      border-radius: 15px;
-      display: none;
-      z-index: 20;
-      font-family: 'Arial', sans-serif;
-      animation: fadeIn 2s ease;
-    }
-
-    @keyframes fadeIn {
-      from {opacity: 0;}
-      to {opacity: 1;}
-    }
-  </style>
 </head>
 
 <body>
-  <div id="uiContainer">
-    <h3>🌱 Controls</h3>
-    <p><strong>Move:</strong> W/A/S/D or VR Thumbstick</p>
-    <p><strong>Look Around:</strong> Mouse or VR Headset</p>
-    <p><strong>Water Saplings:</strong> Left-click or VR Trigger</p>
-    <div id="progressBarContainer">
-      <div id="progressBarFill"></div>
-    </div>
-    <p style="text-align:center;font-size:12px;margin-top:4px;">Saplings Watered: <span id="wateredCount">0</span>/5</p>
-  </div>
-
-  <div id="afforestationMessage">🌳 Planting a tree, plants hope. 🌍<br>A GREENER tomorrow starts with a SINGLE tree!</div>
-
   <a-scene background="color: #8b8b8b" fog="type: linear; color: #8b8b8b; near: 6; far: 60">
 
     <a-assets>
@@ -101,7 +25,10 @@
     <a-sky id="sceneSky" color="#9e9ea0"></a-sky>
     <a-plane id="groundPlane" rotation="-90 0 0" width="200" height="200" color="#6b4f3b"></a-plane>
 
-    <a-entity id="rig" position="0 1.6 4" movement-controls>
+    <!-- Player rig with VR movement -->
+    <a-entity id="rig" position="0 1.6 4"
+              movement-controls="fly: false; speed: 0.2; gamepad: true; touchEnabled: true; constrainToNavMesh: false">
+      
       <a-entity camera look-controls
                 cursor="rayOrigin: mouse;"
                 raycaster="objects: .clickable; far: 5;">
@@ -109,6 +36,29 @@
       
       <a-entity id="leftHand" hand-controls="hand: left" laser-controls="hand: left" raycaster="objects: .clickable; far: 5;"></a-entity>
       <a-entity id="rightHand" hand-controls="hand: right" laser-controls="hand: right" raycaster="objects: .clickable; far: 5;"></a-entity>
+
+      <!-- 3D UI Panel -->
+      <a-entity id="ui3D" position="0 0.5 -1.5">
+        <a-plane width="0.8" height="0.5" color="#000000" opacity="0.6" radius="0.05"></a-plane>
+        <a-text value="🌱 Controls" position="0 0.18 0.01" align="center" color="#7cf57c" width="0.7" font="mozillavr"></a-text>
+        <a-text value="Move: W/A/S/D or VR Thumbstick" position="0 0.08 0.01" align="center" color="#ffffff" width="0.7" font="mozillavr"></a-text>
+        <a-text value="Look Around: Mouse or VR Headset" position="0 0.00 0.01" align="center" color="#ffffff" width="0.7" font="mozillavr"></a-text>
+        <a-text value="Water Saplings: Trigger / Click" position="0 -0.08 0.01" align="center" color="#ffffff" width="0.7" font="mozillavr"></a-text>
+
+        <!-- Progress bar -->
+        <a-plane id="progressBar3DBackground" width="0.6" height="0.05" position="0 -0.18 0.01" color="#ffffff" opacity="0.2" radius="0.025"></a-plane>
+        <a-plane id="progressBar3DFill" width="0" height="0.05" position="-0.3 -0.18 0.02" color="#4caf50" radius="0.025"></a-plane>
+
+        <a-text id="wateredCount3D" value="0/5" position="0 -0.28 0.01" align="center" color="#ffffff" width="0.7" font="mozillavr"></a-text>
+      </a-entity>
+
+      <!-- 3D Afforestation message locked to camera -->
+      <a-entity id="afforestationMessage" position="0 0 -2" visible="false">
+        <a-plane id="messagePlane" width="1.5" height="0.5" color="#000" opacity="0.6" radius="0.1"></a-plane>
+        <a-text value="🌳 Planting a tree, plants hope. 🌍\nA GREENER tomorrow starts with a SINGLE tree!"
+                color="#ffffff" align="center" width="1.4" position="0 0 0.01"></a-text>
+      </a-entity>
+
     </a-entity>
 
     <a-entity id="forestContainer"></a-entity>
@@ -118,51 +68,33 @@
       document.addEventListener("DOMContentLoaded", () => {
         const forest = document.getElementById("forestContainer");
         const saplings = document.getElementById("saplingContainer");
-        const wateredCountText = document.getElementById("wateredCount");
-        const progressBarFill = document.getElementById("progressBarFill");
+        const progressBar3D = document.getElementById("progressBar3DFill");
+        const wateredCount3D = document.getElementById("wateredCount3D");
+        const ui3D = document.getElementById("ui3D");
         const sky = document.getElementById("sceneSky");
         const ground = document.getElementById("groundPlane");
         const message = document.getElementById("afforestationMessage");
+        const messagePlane = document.getElementById("messagePlane");
 
         let wateredCount = 0;
         let forestTransformed = false;
 
-        function updateProgress() {
-          wateredCount++;
-          if (wateredCount > 5) wateredCount = 5;
-          wateredCountText.textContent = wateredCount;
-          progressBarFill.style.width = (wateredCount / 5) * 100 + "%";
-
-          if (wateredCount === 5 && !forestTransformed) {
-            forestTransformed = true;
-            setTimeout(() => transformToGreenForest(), 1000);
-          }
-        }
-
         function rand(min, max) { return Math.random() * (max - min) + min; }
-
         const deadTreeModels = [
           { id: "#deadTree1", scales: ["0.5 0.9 0.5", "0.55 1.0 0.55", "0.6 1.1 0.6"] },
           { id: "#deadTree2", scales: ["0.3 0.5 0.3", "0.32 0.52 0.32", "0.35 0.55 0.35"] },
           { id: "#deadTree3", scales: ["0.02 0.03 0.02", "0.025 0.035 0.025", "0.03 0.04 0.03"] }
         ];
-
         const usedPositions = [];
         const minDistance = 6;
-
         function isTooClose(x, z, positions, minDist) {
-          return positions.some(pos => {
-            const dx = pos.x - x;
-            const dz = pos.z - z;
-            return Math.sqrt(dx * dx + dz * dz) < minDist;
-          });
+          return positions.some(pos => Math.sqrt((pos.x-x)**2 + (pos.z-z)**2) < minDist);
         }
 
         // --- Dead trees ---
         for (let i = 0; i < 12; i++) {
           let x, z;
-          do { x = rand(-35, 35); z = rand(-35, 35); }
-          while (isTooClose(x, z, usedPositions, minDistance));
+          do { x = rand(-35, 35); z = rand(-35, 35); } while (isTooClose(x, z, usedPositions, minDistance));
           usedPositions.push({ x, z });
 
           const treeObj = deadTreeModels[Math.floor(Math.random() * deadTreeModels.length)];
@@ -179,7 +111,7 @@
         const saplingPositions = [];
         for (let i = 0; i < 12; i++) {
           let x, z;
-          do { x = rand(-25, 25); z = rand(-25, 25); }
+          do { x = rand(-25, 25); z = rand(-25, 25); } 
           while (isTooClose(x, z, saplingPositions, 5) || isTooClose(x, z, usedPositions, 4));
           saplingPositions.push({ x, z });
 
@@ -195,7 +127,6 @@
           sapling.appendChild(model);
 
           const clickBox = document.createElement("a-box");
-          // FIX 3: Added 'clickable' class for all raycasters
           clickBox.setAttribute("class", "clickable"); 
           clickBox.setAttribute("width", 0.5);
           clickBox.setAttribute("height", 1.0);
@@ -203,11 +134,8 @@
           clickBox.setAttribute("material", "opacity:0; transparent:true");
           sapling.appendChild(clickBox);
 
-          // FIX 5: Moved listener from 'sapling' to 'clickBox'
-          // This makes it work reliably for both mouse and VR trigger
           clickBox.addEventListener("click", (evt) => {
-            evt.stopPropagation(); // Stop event from bubbling
-            
+            evt.stopPropagation();
             createWateringEffect(sapling);
             setTimeout(() => {
               growIntoTree(sapling);
@@ -224,8 +152,7 @@
             particle.setAttribute("material", "color:#00bfff; opacity:0.9; transparent:true");
             const offsetX = rand(-0.4,0.4), offsetZ = rand(-0.4,0.4), startY = rand(1.2,1.8);
             particle.setAttribute("position", `${offsetX} ${startY} ${offsetZ}`);
-            particle.setAttribute("animation__fall", 
-              `property: position; to: ${offsetX} 0 ${offsetZ}; dur: 800; easing: easeInQuad`);
+            particle.setAttribute("animation__fall", `property: position; to: ${offsetX} 0 ${offsetZ}; dur: 800; easing: easeInQuad`);
             sapling.appendChild(particle);
             setTimeout(() => particle.remove(), 1000);
           }
@@ -244,16 +171,33 @@
           tree.setAttribute("position", `${sapPos.x} ${sapPos.y} ${sapPos.z}`);
           const treeScale = `${(Math.random()*0.5+1.2)*15} ${(Math.random()*0.6+2.0)*12} ${(Math.random()*0.5+1.2)*15}`;
           tree.setAttribute("scale", "0.01 0.01 0.01");
-          tree.setAttribute("animation__grow",
-            `property: scale; from: 0.01 0.01 0.01; to: ${treeScale}; dur: 2000; easing: easeOutElastic`);
+          tree.setAttribute("animation__grow", `property: scale; from: 0.01 0.01 0.01; to: ${treeScale}; dur: 2000; easing: easeOutElastic`);
           forest.appendChild(tree);
         }
 
+        function updateProgress() {
+          wateredCount++;
+          if (wateredCount > 5) wateredCount = 5;
+
+          const progress = wateredCount / 5;
+          progressBar3D.setAttribute("width", 0.6 * progress);
+          progressBar3D.setAttribute("position", `${-0.3 + 0.3 * progress} -0.18 0.02`);
+          wateredCount3D.setAttribute("value", `${wateredCount}/5`);
+
+          if (wateredCount === 5 && !forestTransformed) {
+            forestTransformed = true;
+            setTimeout(() => transformToGreenForest(), 1000);
+          }
+        }
+
         function transformToGreenForest() {
-          sky.setAttribute("color", "#87CEEB");   // light blue sky
-          ground.setAttribute("color", "#2e8b57"); // green ground
+          sky.setAttribute("color", "#87CEEB");
+          ground.setAttribute("color", "#2e8b57");
           forest.innerHTML = "";
           saplings.innerHTML = "";
+
+          // Hide info panel
+          ui3D.setAttribute("visible", "false");
 
           for (let i = 0; i < 40; i++) {
             const x = rand(-40, 40), z = rand(-40, 40);
@@ -266,11 +210,15 @@
             forest.appendChild(tree);
           }
 
-          message.style.display = "block";
+          // Show 3D afforestation message
+          message.setAttribute("visible", "true");
+          messagePlane.setAttribute("opacity", 0);
+          messagePlane.setAttribute("animation", "property: opacity; from: 0; to: 0.6; dur: 2000; easing: easeInQuad");
         }
 
       });
     </script>
+
   </a-scene>
 </body>
 </html>

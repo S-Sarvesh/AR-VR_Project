@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VR Glacier Melt Visualization</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
+</head>
+<body class="bg-sky-400">
+
+  <div class="relative w-screen h-screen">
+
+    <a-scene embedded="true" vr-mode-ui="enabled: true" renderer="colorManagement: true">
+      
+      <a-entity environment="preset: snowy; ground: flat; groundColor: #e6f2ff; groundColor2: #fafafa; skyType: atmosphere; skyColor: #88c6ff; sunPosition: 0 0.1 -1; fog: 0.8"></a-entity>
+      
+      <a-entity id="rig" position="0 1.6 0" 
+                movement-controls="fly: true; speed: 0.2">
+        
+        <a-camera>
+          <a-entity cursor="rayOrigin: mouse"
+                    raycaster="objects: .clickable; far: 5;">
+          </a-entity>
+        </a-camera>
+        
+        <a-entity hand-controls="hand: left"></a-entity>
+
+        <a-entity hand-controls="hand: right"
+                  laser-controls="hand: right"
+                  raycaster="objects: .clickable; far: 5;">
+        </a-entity>
+
+      </a-entity>
+
+      <a-entity id="control-panel" position="0 1.6 -2">
+        
+        <a-text id="tree-message" 
+                value="This is a virtual simulation that shows the impact that greenhouse gas emissions have on our glaciers. \nGlaciers melting cause sea levels to rise which affects the environment that we live in.\nTo help reduce emissions, plant more trees!"
+                align="center" color="#00008B" width="2"
+                position="0 0.9 0">
+        </a-text>
+
+        <a-entity id="start-button" class="clickable"
+          geometry="primitive: plane; width: 0.8; height: 0.3"
+          material="color: #4CAF50; shader: flat"
+          position="-0.5 0.3 0"
+          text="value: Start Simulation; align: center; wrapCount: 20; color: #FFF">
+        </a-entity>
+
+        <a-entity id="reset-button" class="clickable"
+          geometry="primitive: plane; width: 0.8; height: 0.3"
+          material="color: #f44336; shader: flat"
+          position="0.5 0.3 0"
+          text="value: Reset; align: center; wrapCount: 10; color: #FFF">
+        </a-entity>
+        
+        <a-text id="melt-label" value="Greenhouse Gas Emission Level: 0%"
+          align="center" color="#00008B" width="2"
+          position="0 -0.1 0">
+        </a-text>
+
+        <a-plane id="bar-bg"
+          width="1.8" height="0.1"
+          color="#555"
+          position="0 -0.3 0">
+        </a-plane>
+
+        <a-plane id="bar-fill"
+          width="0" height="0.1"
+          color="#4dd0e1"
+          position="-0.9 -0.3 0.01"> </a-plane>
+      </a-entity>
+      <a-entity position="0 0 -10">
+        <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
+        <a-dodecahedron class="iceberg" position="0 1.5 -5" scale="2 3 2" data-base-pos-y="1.5" data-base-scale-y="3" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-1.5 1 -5.5" scale="1.8 2 1.8" data-base-pos-y="1" data-base-scale-y="2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1.8 0.8 -4.8" scale="2.2 1.8 2" data-base-pos-y="0.8" data-base-scale-y="1.8" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="0.5 0.5 -3.5" scale="1.5 1.5 1.5" data-base-pos-y="0.5" data-base-scale-y="1.5" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-0.8 0.6 -6" scale="1.2 1.2 1.2" data-base-pos-y="0.6" data-base-scale-y="1.2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1 2.5 -5.2" scale="1 1 1" data-base-pos-y="2.5" data-base-scale-y="1" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+      </a-entity>
+      
+      <a-entity position="12 0 -8">
+        <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
+        <a-dodecahedron class="iceberg" position="0 1.5 -5" scale="2 3 2" data-base-pos-y="1.5" data-base-scale-y="3" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-1.5 1 -5.5" scale="1.8 2 1.8" data-base-pos-y="1" data-base-scale-y="2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1.8 0.8 -4.8" scale="2.2 1.8 2" data-base-pos-y="0.8" data-base-scale-y="1.8" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="0.5 0.5 -3.5" scale="1.5 1.5 1.5" data-base-pos-y="0.5" data-base-scale-y="1.5" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-0.8 0.6 -6" scale="1.2 1.2 1.2" data-base-pos-y="0.6" data-base-scale-y="1.2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1 2.5 -5.2" scale="1 1 1" data-base-pos-y="2.5" data-base-scale-y="1" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+      </a-entity>
+
+      <a-entity position="-11 0 -7">
+        <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
+        <a-dodecahedron class="iceberg" position="0 1.5 -5" scale="2 3 2" data-base-pos-y="1.5" data-base-scale-y="3" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-1.5 1 -5.5" scale="1.8 2 1.8" data-base-pos-y="1" data-base-scale-y="2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1.8 0.8 -4.8" scale="2.2 1.8 2" data-base-pos-y="0.8" data-base-scale-y="1.8" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="0.5 0.5 -3.5" scale="1.5 1.5 1.5" data-base-pos-y="0.5" data-base-scale-y="1.5" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-0.8 0.6 -6" scale="1.2 1.2 1.2" data-base-pos-y="0.6" data-base-scale-y="1.2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1 2.5 -5.2" scale="1 1 1" data-base-pos-y="2.5" data-base-scale-y="1" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+      </a-entity>
+
+      <a-entity position="15 0 5">
+        <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
+        <a-dodecahedron class="iceberg" position="0 1.5 -5" scale="2 3 2" data-base-pos-y="1.5" data-base-scale-y="3" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-1.5 1 -5.5" scale="1.8 2 1.8" data-base-pos-y="1" data-base-scale-y="2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1.8 0.8 -4.8" scale="2.2 1.8 2" data-base-pos-y="0.8" data-base-scale-y="1.8" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="0.5 0.5 -3.5" scale="1.5 1.5 1.5" data-base-pos-y="0.5" data-base-scale-y="1.5" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-0.8 0.6 -6" scale="1.2 1.2 1.2" data-base-pos-y="0.6" data-base-scale-y="1.2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1 2.5 -5.2" scale="1 1 1" data-base-pos-y="2.5" data-base-scale-y="1" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+      </a-entity>
+      
+      <a-entity position="-14 0 3">
+        <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
+        <a-dodecahedron class="iceberg" position="0 1.5 -5" scale="2 3 2" data-base-pos-y="1.5" data-base-scale-y="3" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-1.5 1 -5.5" scale="1.8 2 1.8" data-base-pos-y="1" data-base-scale-y="2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1.8 0.8 -4.8" scale="2.2 1.8 2" data-base-pos-y="0.8" data-base-scale-y="1.8" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="0.5 0.5 -3.5" scale="1.5 1.5 1.5" data-base-pos-y="0.5" data-base-scale-y="1.5" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-0.8 0.6 -6" scale="1.2 1.2 1.2" data-base-pos-y="0.6" data-base-scale-y="1.2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1 2.5 -5.2" scale="1 1 1" data-base-pos-y="2.5" data-base-scale-y="1" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+      </a-entity>
+      
+      <a-entity position="8 0 14">
+        <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
+        <a-dodecahedron class="iceberg" position="0 1.5 -5" scale="2 3 2" data-base-pos-y="1.5" data-base-scale-y="3" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-1.5 1 -5.5" scale="1.8 2 1.8" data-base-pos-y="1" data-base-scale-y="2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1.8 0.8 -4.8" scale="2.2 1.8 2" data-base-pos-y="0.8" data-base-scale-y="1.8" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="0.5 0.5 -3.5" scale="1.5 1.5 1.5" data-base-pos-y="0.5" data-base-scale-y="1.5" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-0.8 0.6 -6" scale="1.2 1.2 1.2" data-base-pos-y="0.6" data-base-scale-y="1.2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1 2.5 -5.2" scale="1 1 1" data-base-pos-y="2.5" data-base-scale-y="1" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+      </a-entity>
+      
+      <a-entity position="-9 0 15">
+        <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
+        <a-dodecahedron class="iceberg" position="0 1.5 -5" scale="2 3 2" data-base-pos-y="1.5" data-base-scale-y="3" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-1.5 1 -5.5" scale="1.8 2 1.8" data-base-pos-y="1" data-base-scale-y="2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1.8 0.8 -4.8" scale="2.2 1.8 2" data-base-pos-y="0.8" data-base-scale-y="1.8" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="0.5 0.5 -3.5" scale="1.5 1.5 1.5" data-base-pos-y="0.5" data-base-scale-y="1.5" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-0.8 0.6 -6" scale="1.2 1.2 1.2" data-base-pos-y="0.6" data-base-scale-y="1.2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1 2.5 -5.2" scale="1 1 1" data-base-pos-y="2.5" data-base-scale-y="1" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+      </a-entity>
+      
+      <a-entity position="0 0 16">
+        <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
+        <a-dodecahedron class="iceberg" position="0 1.5 -5" scale="2 3 2" data-base-pos-y="1.5" data-base-scale-y="3" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-1.5 1 -5.5" scale="1.8 2 1.8" data-base-pos-y="1" data-base-scale-y="2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1.8 0.8 -4.8" scale="2.2 1.8 2" data-base-pos-y="0.8" data-base-scale-y="1.8" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="0.5 0.5 -3.5" scale="1.5 1.5 1.5" data-base-pos-y="0.5" data-base-scale-y="1.5" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="-0.8 0.6 -6" scale="1.2 1.2 1.2" data-base-pos-y="0.6" data-base-scale-y="1.2" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+        <a-dodecahedron class="iceberg" position="1 2.5 -5.2" scale="1 1 1" data-base-pos-y="2.5" data-base-scale-y="1" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
+      </a-entity>
+      
+      <a-plane
+        id="water-plane"
+        position="0 -0.5 0"
+        rotation="-90 0 0"
+        width="50"
+        height="50"
+        material="color: #4dd0e1; transparent: true; opacity: 0.2; metalness: 0.1; roughness: 0.2;">
+      </a-plane>
+
+    </a-scene>
+
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Get 3D UI elements
+      const startButton = document.getElementById('start-button');
+      const resetButton = document.getElementById('reset-button');
+      const meltLabel = document.getElementById('melt-label');
+      const barFill = document.getElementById('bar-fill');
+      const barFillBasePos = barFill.getAttribute('position');
+
+      // Get scene elements
+      const water = document.getElementById('water-plane');
+      const icebergs = document.querySelectorAll('.iceberg');
+
+      // --- Constants for animation ---
+      const waterBaseY = -0.5;
+      const waterTargetY = 0.5;
+      const waterBaseOpacity = 0.2;
+      const waterTargetOpacity = 0.8;
+      // This MUST match the width of #bar-bg in the HTML
+      const totalBarWidth = 1.8; 
+      
+      // --- Simulation state ---
+      let animationFrameId = null;
+      let isSimulating = false;
+      // Total duration for the melt animation (in milliseconds)
+      const simulationDuration = 5000; // 5 seconds
+
+      /**
+       * Main function to update all visual elements based on a melt level (0-100).
+       */
+      function updateScene(meltLevel) {
+        const k = meltLevel / 100; // Melt factor (0.0 to 1.0)
+
+        // 1. Update UI Label
+        meltLabel.setAttribute('text', 'value', `Greenhouse Gas Emission Level: ${Math.round(meltLevel)}%`);
+
+        // 2. Update Progress Bar
+        const fillWidth = totalBarWidth * k;
+        // Calculate new X position to make the bar fill from the left
+        const fillPosX = (fillWidth / 2) - (totalBarWidth / 2);
+        
+        barFill.setAttribute('width', fillWidth);
+        barFill.setAttribute('position', { x: fillPosX, y: barFillBasePos.y, z: barFillBasePos.z });
+
+        // 3. Update Water Plane
+        const waterNewY = waterBaseY + (waterTargetY - waterBaseY) * k;
+        const waterNewOpacity = waterBaseOpacity + (waterTargetOpacity - waterBaseOpacity) * k;
+        
+        water.setAttribute('position', `0 ${waterNewY} 0`);
+        water.setAttribute('material', 'opacity', waterNewOpacity);
+
+        // 4. Update all Icebergs
+        icebergs.forEach(iceberg => {
+          // Get original values from the data- attributes
+          const basePosY = Number(iceberg.dataset.basePosY);
+          const baseScaleY = Number(iceberg.dataset.baseScaleY);
+
+          // These are the exact formulas from your original code
+          const newScaleY = baseScaleY * (1 - k * 0.95);
+          const newPosY = basePosY * (1 - k) - (baseScaleY / 2) * k;
+          const newOpacity = 1 - k * 0.5;
+
+          // Get current position/scale to only update the Y value
+          const position = iceberg.getAttribute('position');
+          const scale = iceberg.getAttribute('scale');
+
+          iceberg.setAttribute('position', { x: position.x, y: newPosY, z: position.z });
+          iceberg.setAttribute('scale', { x: scale.x, y: newScaleY, z: scale.z });
+          iceberg.setAttribute('material', 'opacity', newOpacity);
+        });
+      }
+
+      /**
+       * The animation loop that runs every frame using requestAnimationFrame.
+       */
+      function animateSimulation(startTime) {
+        const elapsedTime = performance.now() - startTime;
+        let meltLevel = (elapsedTime / simulationDuration) * 100;
+
+        if (meltLevel >= 100) {
+          // --- Simulation complete ---
+          meltLevel = 100;
+          isSimulating = false;
+          updateScene(meltLevel);
+          cancelAnimationFrame(animationFrameId);
+          return; // Stop the loop
+        }
+
+        // --- Simulation in progress ---
+        updateScene(meltLevel);
+        // Request the next frame
+        animationFrameId = requestAnimationFrame(() => animateSimulation(startTime));
+      }
+
+      /**
+       * "Start" button click handler
+       */
+      function startSimulation() {
+        if (isSimulating) return; // Don't start if already running
+        isSimulating = true;
+        cancelAnimationFrame(animationFrameId); // Clear any previous loop
+        
+        // Record the start time and begin the animation loop
+        const startTime = performance.now();
+        animateSimulation(startTime);
+      }
+
+      /**
+       * "Reset" button click handler
+       */
+      function resetSimulation() {
+        isSimulating = false;
+        cancelAnimationFrame(animationFrameId); // Stop any running simulation
+        updateScene(0); // Reset everything to 0%
+      }
+
+      // --- Attach event listeners to the 3D buttons ---
+      startButton.addEventListener('click', startSimulation);
+      resetButton.addEventListener('click', resetSimulation);
+    });
+  </script>
+
+</body>
+</html>
