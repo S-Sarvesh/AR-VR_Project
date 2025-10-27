@@ -32,7 +32,7 @@
         this.pickTrash = this.pickTrash.bind(this);
         this.handleBinClick = this.handleBinClick.bind(this);
         this.resetGame = this.resetGame.bind(this);
-        // ✅ CHANGED: Removed this.onMouseDown = this.onMouseDown.bind(this);
+        this.onMouseDown = this.onMouseDown.bind(this);
       },
 
       _onSceneLoaded() {
@@ -52,7 +52,7 @@
         this.worldMessage.setAttribute('look-at', '#camera');
         this.camera.appendChild(this.worldMessage);
 
-        // ✅ NOTE: These VR controller listeners will now work correctly
+        // VR controllers
         const controllers = this.sceneEl.querySelectorAll('[laser-controls]');
         controllers.forEach(ctrl => {
           ctrl.addEventListener('triggerdown', () => this.controllerClick(ctrl));
@@ -61,8 +61,7 @@
         this.resetBtn.addEventListener('click', this.resetGame);
         this.resetBtn.addEventListener('triggerdown', this.resetGame);
 
-        // ✅ CHANGED: Removed this.sceneEl.addEventListener('mousedown', this.onMouseDown);
-        // This was hijacking the VR controller clicks.
+        this.sceneEl.addEventListener('mousedown', this.onMouseDown);
 
         this.spawnTrash(12);
         this.updateScoreUI();
@@ -73,13 +72,29 @@
         if (!rc || !rc.intersections.length) return;
         const hit = rc.intersections[0].el;
         if (!hit) return;
-        
-        // ✅ NOTE: We now call the main handler from here
         this.handleClick(hit);
       },
 
-      // ✅ CHANGED: Removed the entire onMouseDown(evt) function
-      // It was conflicting with the VR controls.
+      onMouseDown(evt) {
+        const mouse = new THREE.Vector2();
+        const rect = this.sceneEl.canvas.getBoundingClientRect();
+        mouse.x = ((evt.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((evt.clientY - rect.top) / rect.height) * 2 + 1;
+
+        const cameraObj = this.camera.getObject3D('camera');
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, cameraObj);
+
+        const clickableEls = Array.from(this.sceneEl.querySelectorAll('.clickable'));
+        const objects = clickableEls.map(el => el.object3D);
+        const intersects = raycaster.intersectObjects(objects, true);
+
+        if (intersects.length > 0) {
+          let el = intersects[0].object.el;
+          while (el && !el.classList.contains('clickable')) el = el.parentNode;
+          if (el) this.handleClick(el);
+        }
+      },
 
       handleClick(el) {
         if (el.classList.contains('trash')) this.pickTrash(el.getAttribute('data-type'), el.getAttribute('data-label'), el);
