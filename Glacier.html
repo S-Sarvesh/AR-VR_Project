@@ -23,7 +23,8 @@
           <a-entity cursor="rayOrigin: mouse"
                     raycaster="objects: .clickable; far: 5;">
           </a-entity>
-        </a-camera>
+
+          </a-camera>
         
         <a-entity hand-controls="hand: left"></a-entity>
 
@@ -42,20 +43,26 @@
                 position="0 0.9 0">
         </a-text>
 
+        <a-entity id="homeButton" class="clickable"
+                  geometry="primitive: plane; width: 0.4; height: 0.3"
+                  material="color: #00008B; shader: flat"
+                  position="-0.9 0.3 0"
+                  text="value: HOME; align: center; color: #FFF; width: 1.5; zOffset: 0.01">
+        </a-entity>
+
         <a-entity id="start-button" class="clickable"
           geometry="primitive: plane; width: 0.8; height: 0.3"
           material="color: #4CAF50; shader: flat"
-          position="-0.5 0.3 0"
+          position="-0.2 0.3 0"
           text="value: Start Simulation; align: center; wrapCount: 20; color: #FFF">
         </a-entity>
 
         <a-entity id="reset-button" class="clickable"
           geometry="primitive: plane; width: 0.8; height: 0.3"
           material="color: #f44336; shader: flat"
-          position="0.5 0.3 0"
+          position="0.7 0.3 0"
           text="value: Reset; align: center; wrapCount: 10; color: #FFF">
         </a-entity>
-        
         <a-text id="melt-label" value="Greenhouse Gas Emission Level: 0%"
           align="center" color="#00008B" width="2"
           position="0 -0.1 0">
@@ -173,6 +180,13 @@
       const meltLabel = document.getElementById('melt-label');
       const barFill = document.getElementById('bar-fill');
       const barFillBasePos = barFill.getAttribute('position');
+
+      // === ADDED HOME BUTTON LOGIC ===
+      const homeButton = document.getElementById("homeButton");
+      homeButton.addEventListener("click", () => {
+        window.location.href = "index.html";
+      });
+      // =============================
 
       // Get scene elements
       const water = document.getElementById('water-plane');

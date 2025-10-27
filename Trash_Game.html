@@ -40,13 +40,12 @@
         this.holdingText = document.getElementById('holdingText');
         this.resetBtn = document.getElementById('resetBtn3D');
 
-        // 3D world message attached to camera
         this.worldMessage = document.createElement('a-text');
         this.worldMessage.setAttribute('value', '');
         this.worldMessage.setAttribute('align', 'center');
         this.worldMessage.setAttribute('color', '#00FF00');
         this.worldMessage.setAttribute('width', '3');
-        this.worldMessage.setAttribute('position', '0 -0.5 -2'); 
+        this.worldMessage.setAttribute('position', '0 -0.5 -2');
         this.worldMessage.setAttribute('visible', 'false');
         this.worldMessage.setAttribute('look-at', '#camera');
         this.camera.appendChild(this.worldMessage);
@@ -57,14 +56,11 @@
           ctrl.addEventListener('triggerdown', () => this.controllerClick(ctrl));
         });
 
-        // Reset button
         this.resetBtn.addEventListener('click', this.resetGame);
         this.resetBtn.addEventListener('triggerdown', this.resetGame);
 
-        // Desktop mouse clicks
         this.sceneEl.addEventListener('mousedown', this.onMouseDown);
 
-        // Spawn trash and update UI
         this.spawnTrash(12);
         this.updateScoreUI();
       },
@@ -102,6 +98,7 @@
         if (el.classList.contains('trash')) this.pickTrash(el.getAttribute('data-type'), el.getAttribute('data-label'), el);
         if (el.classList.contains('bin')) this.handleBinClick(el);
         if (el.id === 'resetBtn3D') this.resetGame();
+        if (el.id === 'homeButton') { window.location.href = 'index.html'; }
       },
 
       spawnTrash(count = 12) {
@@ -151,7 +148,6 @@
       handleBinClick(binEl) {
         if (!this.heldType) return;
         const binType = binEl.getAttribute('data-accept');
-
         const correctSound = document.getElementById('correctSound');
         const wrongSound = document.getElementById('wrongSound');
 
@@ -256,8 +252,15 @@
         <a-box color="#4caf50" width="0.9" height="0.3" depth="0.1"></a-box>
         <a-text value="RESET" align="center" color="#fff" width="2" position="0 0 0.08"></a-text>
       </a-entity>
-    </a-entity>
 
+      <!-- ✅ HOME BUTTON on top-left -->
+      <a-entity id="homeButton" class="clickable"
+                geometry="primitive: box; width: 0.5; height: 0.2; depth: 0.05"
+                material="color: #4A90E2; shader: flat"
+                position="-1.0 0.55 0.05"
+                text="value: HOME; align: center; color: #FFF; width: 2; zOffset: 0.03">
+      </a-entity>
+    </a-entity>
   </a-scene>
 </body>
 </html>
