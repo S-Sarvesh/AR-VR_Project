@@ -55,82 +55,37 @@
         this.worldMessage.setAttribute('look-at', '#camera');
         this.camera.appendChild(this.worldMessage);
 
+        // Add cursor to camera for desktop interaction
+        this.camera.setAttribute('cursor', 'rayOrigin: mouse');
+        this.camera.setAttribute('raycaster', 'objects: .clickable');
+
         // VR controllers
         const controllers = this.sceneEl.querySelectorAll('[laser-controls]');
         controllers.forEach(ctrl => {
-          ctrl.addEventListener('triggerdown', () => this.controllerClick(ctrl));
+          ctrl.addEventListener('triggerdown', (evt) => {
+            if (evt.detail.intersectedEl) {
+              this.handleClick(evt.detail.intersectedEl);
+            }
+          });
         });
 
         this.resetBtn.addEventListener('click', this.resetGame);
-        this.resetBtn.addEventListener('triggerdown', this.resetGame);
-
         this.sceneEl.addEventListener('mousedown', this.onMouseDown);
-
-        // Add hover effects for better UX
-        this.addHoverEffects();
 
         this.spawnTrash(12);
         this.updateScoreUI();
       },
 
-      addHoverEffects() {
-        // Add hover effects for clickable elements
-        const clickables = this.sceneEl.querySelectorAll('.clickable');
-        clickables.forEach(el => {
-          // Store original scale
-          el.setAttribute('data-original-scale', el.getAttribute('scale') || '1 1 1');
-          
-          // Add animation for hover effect
-          el.setAttribute('animation__hover', {
-            property: 'scale',
-            startEvents: 'mouseenter',
-            to: '1.1 1.1 1.1',
-            dur: 200
-          });
-          el.setAttribute('animation__hoverout', {
-            property: 'scale',
-            startEvents: 'mouseleave',
-            to: el.getAttribute('data-original-scale'),
-            dur: 200
-          });
-        });
-      },
-
-      controllerClick(controllerEl) {
-        const rc = controllerEl.components.raycaster;
-        if (!rc || !rc.intersections.length) return;
-        const hit = rc.intersections[0].el;
-        if (!hit) return;
-        this.handleClick(hit);
-      },
-
       onMouseDown(evt) {
-        const mouse = new THREE.Vector2();
-        const rect = this.sceneEl.canvas.getBoundingClientRect();
-        mouse.x = ((evt.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((evt.clientY - rect.top) / rect.height) * 2 + 1;
-
-        const cameraObj = this.camera.getObject3D('camera');
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, cameraObj);
-
-        const clickableEls = Array.from(this.sceneEl.querySelectorAll('.clickable'));
-        const objects = clickableEls.map(el => el.object3D);
-        const intersects = raycaster.intersectObjects(objects, true);
-
-        if (intersects.length > 0) {
-          let el = intersects[0].object.el;
-          while (el && !el.classList.contains('clickable')) {
-            el = el.parentNode;
-          }
-          if (el) {
-            this.handleClick(el);
-          }
+        // Let A-Frame's cursor component handle the click
+        // This is just a fallback
+        if (evt.detail && evt.detail.intersectedEl) {
+          this.handleClick(evt.detail.intersectedEl);
         }
       },
 
       handleClick(el) {
-        console.log('Clicked:', el);
+        console.log('Clicked element:', el);
         
         if (el.classList.contains('trash')) {
           this.pickTrash(el.getAttribute('data-type'), el.getAttribute('data-label'), el);
@@ -165,16 +120,10 @@
           ent.setAttribute('gltf-model', rand.model);
           ent.setAttribute('data-type', rand.type);
           ent.setAttribute('data-label', rand.label);
-          ent.setAttribute('data-original-scale', rand.scale);
-
-          // Add animation for better visual feedback
-          ent.setAttribute('animation__float', {
-            property: 'position',
-            to: `${x.toFixed(2)} ${0.3 + Math.random() * 0.2} ${z.toFixed(2)}`,
-            dir: 'alternate',
-            dur: 2000 + Math.random() * 1000,
-            loop: true
-          });
+          
+          // Add collision box for better interaction
+          ent.setAttribute('geometry', 'primitive: box; width: 0.5; height: 0.5; depth: 0.5');
+          ent.setAttribute('material', 'transparent: true; opacity: 0.0; visible: false');
 
           const label = document.createElement('a-text');
           label.setAttribute('value', rand.label);
@@ -190,44 +139,63 @@
       },
 
       pickTrash(type, label, el) {
-        if (this.heldType) return;
+        if (this.heldType) {
+          console.log('Already holding:', this.heldType);
+          return;
+        }
+        
+        console.log('Picking up trash:', type, label);
         this.heldType = type;
         this.heldLabel = label;
         this.holdingText.setAttribute('value', `Picked: ${label}`);
         
-        // Visual feedback when picking up trash
-        if (el) {
-          el.setAttribute('animation__pickup', {
-            property: 'scale',
-            to: '0 0 0',
-            dur: 300
-          });
-          setTimeout(() => {
-            if (el.parentNode) el.remove();
-          }, 300);
-        }
+        // Add animation before removal
+        el.setAttribute('animation', {
+          property: 'scale',
+          to: '0 0 0',
+          dur: 300,
+          easing: 'easeInQuad'
+        });
+        
+        setTimeout(() => {
+          if (el.parentNode) {
+            el.remove();
+          }
+        }, 300);
       },
 
       handleBinClick(binEl) {
-        if (!this.heldType) return;
+        if (!this.heldType) {
+          console.log('No trash held');
+          return;
+        }
+        
         const binType = binEl.getAttribute('data-accept');
         const correctSound = document.getElementById('correctSound');
         const wrongSound = document.getElementById('wrongSound');
 
+        console.log('Disposing', this.heldType, 'in', binType, 'bin');
+
         // Visual feedback for bin interaction
-        binEl.setAttribute('animation__press', {
+        binEl.setAttribute('animation', {
           property: 'scale',
-          to: '1.05 0.95 1.05',
+          to: '1.1 1.1 1.1',
           dur: 200,
           dir: 'alternate'
         });
 
         if (this.heldType === binType) {
           this.score = Math.min(this.MAX_SCORE, this.score + 10);
-          correctSound.components.sound.playSound();
+          console.log('Correct! Score:', this.score);
+          if (correctSound && correctSound.components.sound) {
+            correctSound.components.sound.playSound();
+          }
         } else {
           this.score = Math.max(0, this.score - 5);
-          wrongSound.components.sound.playSound();
+          console.log('Wrong! Score:', this.score);
+          if (wrongSound && wrongSound.components.sound) {
+            wrongSound.components.sound.playSound();
+          }
         }
 
         this.updateScoreUI();
@@ -235,11 +203,25 @@
         if (this.score >= this.MAX_SCORE) {
           this.worldMessage.setAttribute('value', '🎉 Congratulations!\nTrash segregation keeps our environment clean!');
           this.worldMessage.setAttribute('visible', 'true');
-          this.worldMessage.setAttribute('animation__float', 'property: position; to: 0 1.5 -2; dur: 3000; easing: easeOutQuad');
-          this.worldMessage.setAttribute('animation__fade', 'property: material.opacity; from: 1; to: 0; dur: 3000; easing: linear');
+          this.worldMessage.setAttribute('animation__float', {
+            property: 'position',
+            to: '0 1.5 -2',
+            dur: 3000,
+            easing: 'easeOutQuad'
+          });
+          this.worldMessage.setAttribute('animation__fade', {
+            property: 'material.opacity',
+            from: 1,
+            to: 0,
+            dur: 3000,
+            easing: 'linear'
+          });
         }
 
+        // Spawn new trash after a short delay
         setTimeout(() => this.spawnTrash(1), 700);
+        
+        // Reset held item
         this.heldType = null;
         this.heldLabel = null;
         this.holdingText.setAttribute('value', 'Picked: None');
@@ -247,12 +229,13 @@
 
       updateScoreUI() {
         this.scoreText.setAttribute('value', `Score: ${this.score}`);
-        const width = (this.score / this.MAX_SCORE) * 1.6;
+        const width = Math.max(0.01, (this.score / this.MAX_SCORE) * 1.6);
         this.scoreBarFill.setAttribute('geometry', 'width', width);
         this.scoreBarFill.setAttribute('position', `${-0.8 + width / 2} -0.5 0.01`);
       },
 
       resetGame() {
+        console.log('Resetting game');
         document.querySelectorAll('.trash').forEach(t => t.remove());
         this.heldType = null;
         this.heldLabel = null;
@@ -277,12 +260,8 @@
       <a-camera id="camera" look-controls="pointerLockEnabled: false" cursor="rayOrigin: mouse" raycaster="objects: .clickable"></a-camera>
     </a-entity>
 
-    <a-entity laser-controls="hand: left" raycaster="objects: .clickable; far: 30;" cursor="fuse: false" super-hands>
-      <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30" material="color:#ff4444; opacity:0.45; shader: flat"></a-box>
-    </a-entity>
-    <a-entity laser-controls="hand: right" raycaster="objects: .clickable; far: 30;" cursor="fuse: false" super-hands>
-      <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30" material="color:#44ff44; opacity:0.45; shader: flat"></a-box>
-    </a-entity>
+    <a-entity laser-controls="hand: left" raycaster="objects: .clickable; far: 30;" line="color: red"></a-entity>
+    <a-entity laser-controls="hand: right" raycaster="objects: .clickable; far: 30;" line="color: green"></a-entity>
 
     <a-sound id="correctSound" src="assets/correct.wav" autoplay="false" positional="false"></a-sound>
     <a-sound id="wrongSound" src="assets/wrong.wav" autoplay="false" positional="false"></a-sound>
