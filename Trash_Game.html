@@ -234,17 +234,19 @@
 
     <a-entity id="cameraRig" position="0 0.2 4" movement-controls="speed: 0.05" wasd-controls>
       <a-camera id="camera" look-controls="pointerLockEnabled: false"></a-camera>
+
+        <a-entity laser-controls="hand: left" raycaster="objects: .clickable; far: 30;" cursor="fuse: false" super-hands>
+        <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30"
+              material="color:#ff4444; opacity:0.45; shader: flat"></a-box>
+      </a-entity>
+
+      <a-entity laser-controls="hand: right" raycaster="objects: .clickable; far: 30;" cursor="fuse: false" super-hands>
+        <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30"
+              material="color:#44ff44; opacity:0.45; shader: flat"></a-box>
+      </a-entity>
     </a-entity>
 
-    <a-entity laser-controls="hand: left" raycaster="objects: .clickable; far: 30;" cursor="fuse: false" super-hands>
-      <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30"
-             material="color:#ff4444; opacity:0.45; shader: flat"></a-box>
-    </a-entity>
-
-    <a-entity laser-controls="hand: right" raycaster="objects: .clickable; far: 30;" cursor="fuse: false" super-hands>
-      <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30"
-             material="color:#44ff44; opacity:0.45; shader: flat"></a-box>
-    </a-entity>
+  
 
     <a-sound id="correctSound" src="assets/correct.wav" autoplay="false" positional="false"></a-sound>
     <a-sound id="wrongSound" src="assets/wrong.wav" autoplay="false" positional="false"></a-sound>
