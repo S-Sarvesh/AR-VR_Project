@@ -159,33 +159,60 @@
       },
 
       handleBinClick(binEl) {
-        if (!this.heldType) return;
+        // No trash held → do nothing
+        if (!this.heldTrashEl || !this.heldType) return;
+
         const binType = binEl.getAttribute('data-accept');
         const correctSound = document.getElementById('correctSound');
         const wrongSound = document.getElementById('wrongSound');
 
-        if (this.heldType === binType) {
-          this.score = Math.min(this.MAX_SCORE, this.score + 10);
-          correctSound.components.sound.playSound();
+        // ✅ Determine scoring
+        const isCorrect = (this.heldType === binType);
+
+        if (isCorrect) {
+            this.score = Math.min(this.MAX_SCORE, this.score + 10);
+            if (correctSound && correctSound.components.sound) {
+                correctSound.components.sound.playSound();
+            }
         } else {
-          this.score = Math.max(0, this.score - 5);
-          wrongSound.components.sound.playSound();
+            this.score = Math.max(0, this.score - 5);
+            if (wrongSound && wrongSound.components.sound) {
+                wrongSound.components.sound.playSound();
+            }
         }
 
+        // ✅ Update UI
         this.updateScoreUI();
 
-        if (this.score >= this.MAX_SCORE) {
-          this.worldMessage.setAttribute('value', '🎉 Congratulations!\nTrash segregation keeps our environment clean!');
-          this.worldMessage.setAttribute('visible', 'true');
-          this.worldMessage.setAttribute('animation__float', 'property: position; to: 0 1.5 -2; dur: 3000; easing: easeOutQuad');
-          this.worldMessage.setAttribute('animation__fade', 'property: material.opacity; from: 1; to: 0; dur: 3000; easing: linear');
+        // ✅ Remove the trash from scene
+        if (this.heldTrashEl && this.heldTrashEl.parentNode) {
+            this.heldTrashEl.parentNode.removeChild(this.heldTrashEl);
         }
 
-        setTimeout(() => this.spawnTrash(1), 700);
+        // ✅ Reset held state
+        this.heldTrashEl = null;
         this.heldType = null;
-        this.heldLabel = null;
-        this.holdingText.setAttribute('value', 'Picked: None');
+
+        // ✅ MAX SCORE reached: show congratulation message
+        if (this.score >= this.MAX_SCORE) {
+            this.worldMessage.setAttribute('value',
+                '🎉 Congratulations!\nTrash segregation keeps our environment clean!'
+            );
+
+            this.worldMessage.setAttribute('visible', true);
+
+            // Floating animation
+            this.worldMessage.setAttribute('animation__float',
+                'property: position; to: 0 1.5 -2; dur: 3000; easing: easeOutQuad; loop: false'
+            );
+
+            // Fade-out animation
+            this.worldMessage.setAttribute('animation__fade',
+                'property: material.opacity; from: 1; to: 0; dur: 3000; easing: linear; loop: false'
+            );
+        }
       },
+
 
       updateScoreUI() {
         this.scoreText.setAttribute('value', `Score: ${this.score}`);
@@ -229,19 +256,63 @@
     <a-sound id="correctSound" src="assets/correct.wav" autoplay="false" positional="false"></a-sound>
     <a-sound id="wrongSound" src="assets/wrong.wav" autoplay="false" positional="false"></a-sound>
 
-    <a-cylinder id="bioBin" class="bin clickable" position="-10 1 -4" radius="0.9" height="1.4" color="#388e3c" data-accept="bio">
+        <!-- ✅ BIO BIN -->
+    <a-cylinder id="bioBin"
+                class="bin clickable"
+                position="-10 1 -4"
+                radius="0.9"
+                height="1.4"
+                color="#388e3c"
+                data-accept="bio"
+                onclick="this.sceneEl.systems['game-manager'].handleBinClick(this)">
       <a-text value="BIO" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
-    <a-cylinder id="nonBioBin" class="bin clickable" position="-5 1 -4" radius="0.9" height="1.4" color="#b71c1c" data-accept="nonbio">
+
+    <!-- ✅ NON-BIO BIN -->
+    <a-cylinder id="nonBioBin"
+                class="bin clickable"
+                position="-5 1 -4"
+                radius="0.9"
+                height="1.4"
+                color="#b71c1c"
+                data-accept="nonbio"
+                onclick="this.sceneEl.systems['game-manager'].handleBinClick(this)">
       <a-text value="NON-BIO" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
-    <a-cylinder id="paperBin" class= "bin clickable" position="0 1 -4" radius="0.9" height="1.4" color="#fbc02d" data-accept="paper">
+
+    <!-- ✅ PAPER BIN -->
+    <a-cylinder id="paperBin"
+                class="bin clickable"
+                position="0 1 -4"
+                radius="0.9"
+                height="1.4"
+                color="#fbc02d"
+                data-accept="paper"
+                onclick="this.sceneEl.systems['game-manager'].handleBinClick(this)">
       <a-text value="PAPER" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
-    <a-cylinder id="metalBin" class="bin clickable" position="5 1 -4" radius="0.9" height="1.4" color="#616161" data-accept="metal">
+
+    <!-- ✅ METAL BIN -->
+    <a-cylinder id="metalBin"
+                class="bin clickable"
+                position="5 1 -4"
+                radius="0.9"
+                height="1.4"
+                color="#616161"
+                data-accept="metal"
+                onclick="this.sceneEl.systems['game-manager'].handleBinClick(this)">
       <a-text value="METAL" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
-    <a-cylinder id="glassBin" class="bin clickable" position="10 1 -4" radius="0.9" height="1.4" color="#1565c0" data-accept="glass">
+
+    <!-- ✅ GLASS BIN -->
+    <a-cylinder id="glassBin"
+                class="bin clickable"
+                position="10 1 -4"
+                radius="0.9"
+                height="1.4"
+                color="#1565c0"
+                data-accept="glass"
+                onclick="this.sceneEl.systems['game-manager'].handleBinClick(this)">
       <a-text value="GLASS" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
 
