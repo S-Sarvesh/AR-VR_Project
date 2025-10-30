@@ -115,7 +115,7 @@
           this.resetGame();
 
         else if (el.id === 'homeButton')
-          window.location.href = 'index.html';
+          window.location.href = './index.html';
       },
 
       spawnTrash(count = 12) {
@@ -251,7 +251,7 @@
       <a-entity id="leftHand"
                 position="-0.3 1.4 -0.5"
                 laser-controls="hand: left"
-                raycaster="objects: .clickable; far: 30;"
+                raycaster="objects: .clickable; far: 30; showLine: false;"
                 super-hands>
         <!-- box-ray visual (red) -->
         <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30"
@@ -262,7 +262,7 @@
       <a-entity id="rightHand"
                 position="0.3 1.4 -0.5"
                 laser-controls="hand: right"
-                raycaster="objects: .clickable; far: 30;"
+                raycaster="objects: .clickable; far: 30; showLine: false;"
                 super-hands>
         <!-- box-ray visual (green) -->
         <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30"
