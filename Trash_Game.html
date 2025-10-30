@@ -7,14 +7,44 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-rounded@1.0.0/aframe-rounded.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
-  
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
-  <script src="https://unpkg.com/aframe-super-hands/dist/aframe-super-hands.min.js"></script>
 
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; }
     a-scene { width: 100%; height: 100%; }
   </style>
+
+  <script>
+    // Make GLTF models raycastable once they load
+    AFRAME.registerComponent('raycast-ready', {
+      init() {
+        this.el.addEventListener('model-loaded', () => {
+          this.el.object3D.traverse(node => {
+            if (node.isMesh) {
+              node.raycast = THREE.Mesh.prototype.raycast;
+            }
+          });
+        });
+      }
+    });
+
+    // Click handler component for both desktop and VR
+    AFRAME.registerComponent('clickable', {
+      init() {
+        this.handleClick = this.handleClick.bind(this);
+        this.el.addEventListener('click', this.handleClick);
+        this.el.addEventListener('mousedown', this.handleClick);
+      },
+      handleClick(evt) {
+        // Emit a custom event that the game manager will listen for
+        this.el.emit('item-clicked', { element: this.el });
+      },
+      remove() {
+        this.el.removeEventListener('click', this.handleClick);
+        this.el.removeEventListener('mousedown', this.handleClick);
+      }
+    });
+  </script>
 
   <script>
     AFRAME.registerComponent('game-manager', {
@@ -33,6 +63,7 @@
         this.pickTrash = this.pickTrash.bind(this);
         this.handleBinClick = this.handleBinClick.bind(this);
         this.resetGame = this.resetGame.bind(this);
+        this.onItemClicked = this.onItemClicked.bind(this);
         this.onMouseDown = this.onMouseDown.bind(this);
       },
 
@@ -42,6 +73,21 @@
         this.scoreBarFill = document.getElementById('scoreBarFill');
         this.holdingText = document.getElementById('holdingText');
         this.resetBtn = document.getElementById('resetBtn3D');
+
+        // Show controllers only when VR mode is active
+        this.sceneEl.addEventListener('enter-vr', () => {
+          const leftCtrl = document.getElementById('leftController');
+          const rightCtrl = document.getElementById('rightController');
+          if (leftCtrl) leftCtrl.setAttribute('visible', 'true');
+          if (rightCtrl) rightCtrl.setAttribute('visible', 'true');
+        });
+        
+        this.sceneEl.addEventListener('exit-vr', () => {
+          const leftCtrl = document.getElementById('leftController');
+          const rightCtrl = document.getElementById('rightController');
+          if (leftCtrl) leftCtrl.setAttribute('visible', 'false');
+          if (rightCtrl) rightCtrl.setAttribute('visible', 'false');
+        });
 
         this.worldMessage = document.createElement('a-text');
         this.worldMessage.setAttribute('value', '');
@@ -53,27 +99,33 @@
         this.worldMessage.setAttribute('look-at', '#camera');
         this.camera.appendChild(this.worldMessage);
 
-        // VR controllers
-        const controllers = this.sceneEl.querySelectorAll('[laser-controls]');
-        controllers.forEach(ctrl => {
-          ctrl.addEventListener('triggerdown', () => this.controllerClick(ctrl));
-        });
+        // Listen for item-clicked events from all clickable items
+        this.sceneEl.addEventListener('item-clicked', this.onItemClicked);
 
-        this.resetBtn.addEventListener('click', this.resetGame);
-        this.resetBtn.addEventListener('triggerdown', this.resetGame);
-
+        // Desktop mouse clicks
         this.sceneEl.addEventListener('mousedown', this.onMouseDown);
 
         this.spawnTrash(12);
         this.updateScoreUI();
       },
 
-      controllerClick(controllerEl) {
-        const rc = controllerEl.components.raycaster;
-        if (!rc || !rc.intersections.length) return;
-        const hit = rc.intersections[0].el;
-        if (!hit) return;
-        this.handleClick(hit);
+      onItemClicked(evt) {
+        const el = evt.detail.element;
+        if (!el) return;
+
+        if (el.classList.contains('trash-item')) {
+          this.pickTrash(
+            el.getAttribute('data-type'),
+            el.getAttribute('data-label'),
+            el
+          );
+        } else if (el.classList.contains('bin-item')) {
+          this.handleBinClick(el);
+        } else if (el.id === 'resetBtn3D' || el.parentNode.id === 'resetBtn3D') {
+          this.resetGame();
+        } else if (el.id === 'homeButton' || el.parentNode.id === 'homeButton') {
+          window.location.href = 'index.html';
+        }
       },
 
       onMouseDown(evt) {
@@ -86,22 +138,19 @@
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, cameraObj);
 
-        const clickableEls = Array.from(this.sceneEl.querySelectorAll('.clickable'));
-        const objects = clickableEls.map(el => el.object3D);
+        const clickableEls = Array.from(this.sceneEl.querySelectorAll('[clickable]'));
+        const objects = clickableEls.map(el => el.object3D).filter(Boolean);
         const intersects = raycaster.intersectObjects(objects, true);
 
         if (intersects.length > 0) {
           let el = intersects[0].object.el;
-          while (el && !el.classList.contains('clickable')) el = el.parentNode;
-          if (el) this.handleClick(el);
+          while (el && !el.hasAttribute('clickable')) {
+            el = el.parentNode;
+          }
+          if (el) {
+            el.emit('item-clicked', { element: el });
+          }
         }
-      },
-
-      handleClick(el) {
-        if (el.classList.contains('trash')) this.pickTrash(el.getAttribute('data-type'), el.getAttribute('data-label'), el);
-        if (el.classList.contains('bin')) this.handleBinClick(el);
-        if (el.id === 'resetBtn3D') this.resetGame();
-        if (el.id === 'homeButton') { window.location.href = 'index.html'; }
       },
 
       spawnTrash(count = 12) {
@@ -119,13 +168,15 @@
           const z = -7 + Math.random() * 6;
 
           const ent = document.createElement('a-entity');
-          ent.classList.add('trash', 'clickable');
+          ent.classList.add('trash-item');
+          ent.setAttribute('clickable', '');
           ent.setAttribute('position', `${x.toFixed(2)} 0.3 ${z.toFixed(2)}`);
           ent.setAttribute('rotation', `0 ${Math.random() * 360} 0`);
           ent.setAttribute('scale', rand.scale);
           ent.setAttribute('gltf-model', rand.model);
           ent.setAttribute('data-type', rand.type);
           ent.setAttribute('data-label', rand.label);
+          ent.setAttribute('raycast-ready', '');
 
           const label = document.createElement('a-text');
           label.setAttribute('value', rand.label);
@@ -156,10 +207,14 @@
 
         if (this.heldType === binType) {
           this.score = Math.min(this.MAX_SCORE, this.score + 10);
-          correctSound.components.sound.playSound();
+          if (correctSound && correctSound.components && correctSound.components.sound) {
+            correctSound.components.sound.playSound();
+          }
         } else {
           this.score = Math.max(0, this.score - 5);
-          wrongSound.components.sound.playSound();
+          if (wrongSound && wrongSound.components && wrongSound.components.sound) {
+            wrongSound.components.sound.playSound();
+          }
         }
 
         this.updateScoreUI();
@@ -185,7 +240,7 @@
       },
 
       resetGame() {
-        document.querySelectorAll('.trash').forEach(t => t.remove());
+        document.querySelectorAll('.trash-item').forEach(t => t.remove());
         this.heldType = null;
         this.heldLabel = null;
         this.score = 0;
@@ -205,36 +260,87 @@
                         groundColor: #3b5d2a; groundColor2: #4c6b37; groundYScale: 1;
                         groundDensity: 32; groundFrequency: 8; skyColor: #b3e5fc; fog: 0.9">
 
+    <!-- Camera Rig for Desktop -->
     <a-entity id="cameraRig" position="0 0.2 4" movement-controls="speed: 0.05" wasd-controls>
       <a-camera id="camera" look-controls="pointerLockEnabled: false"></a-camera>
     </a-entity>
 
-    <a-entity laser-controls="hand: left" raycaster="objects: .clickable; far: 30;" cursor="fuse: false" super-hands>
-      <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30" material="color:#ff4444; opacity:0.45; shader: flat"></a-box>
+    <!-- VR Controllers -->
+    <a-entity id="leftController" 
+              laser-controls="hand: left" 
+              raycaster="objects: [clickable]; far: 30; showLine: true; lineColor: red; lineOpacity: 0.5"
+              cursor="fuse: false; rayOrigin: mouse"
+              visible="false">
     </a-entity>
-    <a-entity laser-controls="hand: right" raycaster="objects: .clickable; far: 30;" cursor="fuse: false" super-hands>
-      <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30" material="color:#44ff44; opacity:0.45; shader: flat"></a-box>
+    
+    <a-entity id="rightController" 
+              laser-controls="hand: right" 
+              raycaster="objects: [clickable]; far: 30; showLine: true; lineColor: green; lineOpacity: 0.5"
+              cursor="fuse: false; rayOrigin: mouse"
+              visible="false">
     </a-entity>
 
+    <!-- Sounds -->
     <a-sound id="correctSound" src="assets/correct.wav" autoplay="false" positional="false"></a-sound>
     <a-sound id="wrongSound" src="assets/wrong.wav" autoplay="false" positional="false"></a-sound>
 
-    <a-cylinder id="bioBin" class="bin clickable" position="-10 1 -4" radius="0.9" height="1.4" color="#388e3c" data-accept="bio">
+    <!-- Bins -->
+    <a-cylinder id="bioBin" 
+                class="bin-item" 
+                clickable
+                position="-10 1 -4" 
+                radius="0.9" 
+                height="1.4" 
+                color="#388e3c" 
+                data-accept="bio">
       <a-text value="BIO" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
-    <a-cylinder id="nonBioBin" class="bin clickable" position="-5 1 -4" radius="0.9" height="1.4" color="#b71c1c" data-accept="nonbio">
+    
+    <a-cylinder id="nonBioBin" 
+                class="bin-item" 
+                clickable
+                position="-5 1 -4" 
+                radius="0.9" 
+                height="1.4" 
+                color="#b71c1c" 
+                data-accept="nonbio">
       <a-text value="NON-BIO" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
-    <a-cylinder id="paperBin" class= "bin clickable" position="0 1 -4" radius="0.9" height="1.4" color="#fbc02d" data-accept="paper">
+    
+    <a-cylinder id="paperBin" 
+                class="bin-item" 
+                clickable
+                position="0 1 -4" 
+                radius="0.9" 
+                height="1.4" 
+                color="#fbc02d" 
+                data-accept="paper">
       <a-text value="PAPER" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
-    <a-cylinder id="metalBin" class="bin clickable" position="5 1 -4" radius="0.9" height="1.4" color="#616161" data-accept="metal">
+    
+    <a-cylinder id="metalBin" 
+                class="bin-item" 
+                clickable
+                position="5 1 -4" 
+                radius="0.9" 
+                height="1.4" 
+                color="#616161" 
+                data-accept="metal">
       <a-text value="METAL" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
-    <a-cylinder id="glassBin" class="bin clickable" position="10 1 -4" radius="0.9" height="1.4" color="#1565c0" data-accept="glass">
+    
+    <a-cylinder id="glassBin" 
+                class="bin-item" 
+                clickable
+                position="10 1 -4" 
+                radius="0.9" 
+                height="1.4" 
+                color="#1565c0" 
+                data-accept="glass">
       <a-text value="GLASS" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
 
+    <!-- UI Panel -->
     <a-entity id="infoPanel" position="0 3 -2" look-at="#camera">
       <a-plane color="#000" opacity="0.65" width="2.6" height="1.3" radius="0.1"></a-plane>
       <a-text value="How to Play:\n- Click a trash to pick it up.\n- Click the correct bin to dispose.\n- +10 for correct, -5 for wrong."
@@ -243,83 +349,32 @@
       <a-text id="holdingText" value="Picked: None" align="center" color="#ffeb3b" width="2" position="0 0 0.02"></a-text>
 
       <a-text id="scoreText" value="Score: 0" align="center" color="#ffeb3b" width="2.5" position="0 -0.25 0.02"></a-text>
-      <a-entity id="progressBarBg" geometry="primitive: box; width: 1.6; height: 0.15; depth: 0.02"
-                position="0 -0.5 0" material="color: #555"></a-entity>
-      <a-entity id="scoreBarFill" geometry="primitive: box; width: 0; height: 0.15; depth: 0.02"
-                position="-0.8 -0.5 0.01" material="color: #4caf50"></a-entity>
+      
+      <a-entity id="progressBarBg" 
+                geometry="primitive: box; width: 1.6; height: 0.15; depth: 0.02"
+                position="0 -0.5 0" 
+                material="color: #555"></a-entity>
+      
+      <a-entity id="scoreBarFill" 
+                geometry="primitive: box; width: 0; height: 0.15; depth: 0.02"
+                position="-0.8 -0.5 0.01" 
+                material="color: #4caf50"></a-entity>
 
-      <a-entity id="resetBtn3D" class="clickable" position="0 -0.75 0.03">
+      <!-- Reset Button -->
+      <a-entity id="resetBtn3D" clickable position="0 -0.75 0.03">
         <a-box color="#4caf50" width="0.9" height="0.3" depth="0.1"></a-box>
         <a-text value="RESET" align="center" color="#fff" width="2" position="0 0 0.08"></a-text>
       </a-entity>
 
-      <a-entity id="homeButton" class="clickable"
+      <!-- Home Button -->
+      <a-entity id="homeButton" 
+                clickable
                 geometry="primitive: box; width: 0.5; height: 0.2; depth: 0.05"
                 material="color: #4A90E2; shader: flat"
-                position="-1.0 0.55 0.05"
-                text="value: HOME; align: center; color: #FFF; width: 2; zOffset: 0.03">
+                position="-1.0 0.55 0.05">
+        <a-text value="HOME" align="center" color="#FFF" width="2" position="0 0 0.03"></a-text>
       </a-entity>
     </a-entity>
   </a-scene>
-  <script>
-    // Explicit raycast fallback for VR controllers: dispatch click events on nearest `.clickable`.
-    (function () {
-      AFRAME.registerComponent('explicit-raycast-on-trigger', {
-        init: function () {
-          const sceneEl = this.el;
-          const DEBUG = true;
-          sceneEl.addEventListener('loaded', () => {
-            const controllers = sceneEl.querySelectorAll('[laser-controls], [hand-controls]');
-            controllers.forEach(ctrl => {
-              ctrl.addEventListener('triggerdown', () => {
-                if (DEBUG) console.log('[explicit-raycast] triggerdown from', ctrl.id || ctrl);
-                const clickableEls = Array.from(sceneEl.querySelectorAll('.clickable'));
-                if (!clickableEls.length) {
-                  if (DEBUG) console.log('[explicit-raycast] no .clickable elements');
-                  return;
-                }
-                const objects = clickableEls.map(el => el.object3D).filter(Boolean);
-
-                const origin = new THREE.Vector3();
-                const dir = new THREE.Vector3(0, 0, -1);
-                const quat = new THREE.Quaternion();
-                ctrl.object3D.getWorldPosition(origin);
-                ctrl.object3D.getWorldQuaternion(quat);
-                dir.applyQuaternion(quat).normalize();
-
-                if (DEBUG) console.log('[explicit-raycast] origin', origin.toArray(), 'dir', dir.toArray());
-
-                const ray = new THREE.Raycaster(origin, dir);
-                const intersects = ray.intersectObjects(objects, true);
-                if (intersects.length === 0) {
-                  if (DEBUG) console.log('[explicit-raycast] no intersections');
-                  return;
-                }
-
-                const hit = intersects[0];
-                if (DEBUG) console.log('[explicit-raycast] hit', hit);
-
-                if (DEBUG) {
-                  const marker = document.createElement('a-sphere');
-                  marker.setAttribute('color', '#ff0000');
-                  marker.setAttribute('radius', '0.05');
-                  marker.setAttribute('position', `${hit.point.x} ${hit.point.y} ${hit.point.z}`);
-                  marker.setAttribute('material', 'shader: flat; opacity: 0.9');
-                  sceneEl.appendChild(marker);
-                  setTimeout(() => marker.remove(), 1000);
-                }
-
-                let el = hit.object.el;
-                while (el && !el.classList.contains('clickable')) el = el.parentNode;
-                if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-              });
-            });
-          });
-        }
-      });
-
-      document.querySelectorAll('a-scene').forEach(s => s.setAttribute('explicit-raycast-on-trigger', ''));
-    })();
-  </script>
 </body>
 </html>
