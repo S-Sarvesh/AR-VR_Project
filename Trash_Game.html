@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Trash Segregation – VR + Desktop Edition (Two Controllers)</title>
+  <title>Trash Segregation – VR + Desktop Edition (GLB Environment)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- A-Frame -->
+  <!-- A-Frame + Extras -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <!-- Optional extras you used -->
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
   <script src="https://unpkg.com/aframe-super-hands/dist/aframe-super-hands.min.js"></script>
 
@@ -17,7 +16,10 @@
   </style>
 
   <script>
-    // ---------- Explicit raycast component: robust controller trigger -> click ----------
+    /* -------------------------
+       explicit-raycast-on-trigger
+       Controllers -> triggerdown -> raycast -> dispatch click
+       ------------------------- */
     AFRAME.registerComponent('explicit-raycast-on-trigger', {
       init: function () {
         const sceneEl = this.el;
@@ -31,7 +33,6 @@
               const origin = new THREE.Vector3();
               const dir = new THREE.Vector3(0, 0, -1);
               const quat = new THREE.Quaternion();
-              // controller world pose
               ctrl.object3D.getWorldPosition(origin);
               ctrl.object3D.getWorldQuaternion(quat);
               dir.applyQuaternion(quat).normalize();
@@ -39,7 +40,6 @@
               const intersects = ray.intersectObjects(objects, true);
               if (!intersects.length) return;
               const hit = intersects[0];
-              // find clickable ancestor
               let el = hit.object.el;
               while (el && !el.classList.contains('clickable')) el = el.parentNode;
               if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
@@ -49,16 +49,18 @@
       }
     });
 
-    // ---------- Game manager component (attached to a-scene) ----------
+    /* -------------------------
+       game-manager
+       (spawning, pick, drop, scoring)
+       ------------------------- */
     AFRAME.registerComponent('game-manager', {
       init: function () {
         this.sceneEl = this.el.sceneEl;
         this.heldType = null;
         this.heldLabel = null;
-        this.heldTrashEl = null; // store the picked entity
+        this.heldTrashEl = null;
         this.score = 0;
         this.MAX_SCORE = 50;
-
         this._bind();
         this.sceneEl.addEventListener('loaded', () => this._onSceneLoaded());
       },
@@ -71,12 +73,14 @@
       },
 
       _onSceneLoaded() {
-        // UI refs
+        // cached UI references
         this.camera = document.getElementById('camera');
         this.scoreText = document.getElementById('scoreText');
         this.scoreBarFill = document.getElementById('scoreBarFill');
         this.holdingText = document.getElementById('holdingText');
         this.resetBtn = document.getElementById('resetBtn3D');
+
+        // floating world message attached to camera
         this.worldMessage = document.createElement('a-text');
         this.worldMessage.setAttribute('value', '');
         this.worldMessage.setAttribute('align', 'center');
@@ -87,24 +91,25 @@
         this.worldMessage.setAttribute('look-at', '#camera');
         this.camera.appendChild(this.worldMessage);
 
-        // Hook desktop mouse clicks
+        // desktop mouse fallback
         this.sceneEl.canvas && this.sceneEl.addEventListener('mousedown', this._onMouseDown);
 
-        // Attach click-handlers for bins (inline onclick also works but we keep this consistent)
+        // attach click listeners for bins (in case elements already present)
         document.querySelectorAll('.bin.clickable').forEach(bin => {
           bin.addEventListener('click', () => this.handleBinClick(bin));
         });
 
-        // Reset button
-        this.resetBtn.addEventListener('click', this.resetGame);
-        this.resetBtn.addEventListener('triggerdown', this.resetGame); // VR controllers can trigger
+        // reset handling
+        if (this.resetBtn) {
+          this.resetBtn.addEventListener('click', this.resetGame);
+          this.resetBtn.addEventListener('triggerdown', this.resetGame);
+        }
 
-        // Spawn initial trash and update UI
+        // spawn initial trash and update UI
         this.spawnTrash(12);
         this.updateScoreUI();
       },
 
-      // desktop mouse -> raycast against .clickable objects
       _onMouseDown(evt) {
         const mouse = new THREE.Vector2();
         const rect = this.sceneEl.canvas.getBoundingClientRect();
@@ -147,7 +152,7 @@
           ent.setAttribute('data-type', rand.type);
           ent.setAttribute('data-label', rand.label);
 
-          // label
+          // label for clarity
           const label = document.createElement('a-text');
           label.setAttribute('value', rand.label);
           label.setAttribute('align', 'center');
@@ -157,7 +162,7 @@
           label.setAttribute('look-at', '#camera');
           ent.appendChild(label);
 
-          // add click listener that picks the trash
+          // clicking picks trash
           ent.addEventListener('click', () => {
             this.pickTrash(
               ent.getAttribute('data-type'),
@@ -171,69 +176,54 @@
       },
 
       pickTrash(type, label, el) {
-        if (this.heldType) return; // already holding
-        // store held info
+        if (this.heldType) return; // already holding one
         this.heldType = type;
         this.heldLabel = label;
         this.heldTrashEl = el;
-
-        // update UI
         this.holdingText.setAttribute('value', `Picked: ${label}`);
 
-        // attach the trash to camera for visual holding (do not remove from DOM)
-        // preserve a small scale so it looks held
+        // visually attach to camera so it appears held
         try {
           el.setAttribute('scale', '0.45 0.45 0.45');
-          // position relative to camera
           el.object3D.position.set(0.35, -0.45, -1.0);
-          // append to camera so it moves with player
           this.camera.appendChild(el);
         } catch (e) {
-          // fallback: if append fails, keep it where it is but mark as held
-          console.warn('Could not attach trash to camera:', e);
+          console.warn('attach to camera failed', e);
         }
       },
 
       handleBinClick(binEl) {
-        // nothing held -> ignore
         if (!this.heldType || !this.heldTrashEl) return;
 
         const binType = binEl.getAttribute('data-accept');
         const correctSound = document.getElementById('correctSound');
         const wrongSound = document.getElementById('wrongSound');
-
         const isCorrect = (this.heldType === binType);
 
         if (isCorrect) {
           this.score = Math.min(this.MAX_SCORE, this.score + 10);
-          if (correctSound && correctSound.components && correctSound.components.sound) {
-            correctSound.components.sound.playSound();
-          }
+          if (correctSound && correctSound.components && correctSound.components.sound) correctSound.components.sound.playSound();
         } else {
           this.score = Math.max(0, this.score - 5);
-          if (wrongSound && wrongSound.components && wrongSound.components.sound) {
-            wrongSound.components.sound.playSound();
-          }
+          if (wrongSound && wrongSound.components && wrongSound.components.sound) wrongSound.components.sound.playSound();
         }
 
-        // update UI
         this.updateScoreUI();
 
-        // remove the held trash from scene (it is a child of camera currently)
+        // remove held trash from DOM
         if (this.heldTrashEl && this.heldTrashEl.parentNode) {
           this.heldTrashEl.parentNode.removeChild(this.heldTrashEl);
         }
 
-        // reset held state & UI
+        // reset held state
         this.heldTrashEl = null;
         this.heldType = null;
         this.heldLabel = null;
         this.holdingText.setAttribute('value', 'Picked: None');
 
-        // spawn replacement after slight delay
+        // spawn replacement
         setTimeout(() => this.spawnTrash(1), 500);
 
-        // win message
         if (this.score >= this.MAX_SCORE) {
           this.worldMessage.setAttribute('value', '🎉 Congratulations!\nTrash segregation keeps our environment clean!');
           this.worldMessage.setAttribute('visible', 'true');
@@ -245,17 +235,12 @@
       updateScoreUI() {
         this.scoreText.setAttribute('value', `Score: ${this.score}`);
         const width = (this.score / this.MAX_SCORE) * 1.6;
-        // update geometry width and position safely
         this.scoreBarFill.setAttribute('geometry', `primitive: box; width: ${width}; height: 0.15; depth: 0.02`);
         this.scoreBarFill.setAttribute('position', `${-0.8 + width / 2} -0.5 0.01`);
       },
 
       resetGame() {
-        // remove all trash
-        document.querySelectorAll('.trash').forEach(t => {
-          if (t.parentNode) t.parentNode.removeChild(t);
-        });
-        // reset state
+        document.querySelectorAll('.trash').forEach(t => t.remove());
         this.heldType = null;
         this.heldLabel = null;
         this.heldTrashEl = null;
@@ -263,7 +248,6 @@
         this.holdingText.setAttribute('value', 'Picked: None');
         this.updateScoreUI();
         this.worldMessage.setAttribute('visible', 'false');
-        // respawn
         this.spawnTrash(12);
       }
     });
@@ -271,16 +255,29 @@
 </head>
 
 <body>
-  <a-scene game-manager explicit-raycast-on-trigger background="color: #b3e5fc"
-           environment="preset: forest; ground: flat; groundTexture: checkerboard;
-                        groundColor: #3b5d2a; groundColor2: #4c6b37; groundYScale: 1;
-                        groundDensity: 32; groundFrequency: 8; skyColor: #b3e5fc; fog: 0.9">
+  <a-scene game-manager explicit-raycast-on-trigger background="color: #b3e5fc" loading-screen="enabled: true">
 
-    <!-- camera rig: controllers are children so they follow headset -->
-    <a-entity id="cameraRig" position="0 0 4">
+    <!-- ASSETS -->
+    <a-assets>
+      <!-- environment GLB (walkable scene) -->
+      <a-asset-item id="envModel" src="models/environment.glb"></a-asset-item>
+
+      <!-- sounds (replace with your files or remove) -->
+      <audio id="correctAudio" src="assets/correct.wav"></audio>
+      <audio id="wrongAudio" src="assets/wrong.wav"></audio>
+    </a-assets>
+
+    <!-- ====== GLB environment placed in the world (walkable) ====== -->
+    <a-entity id="environmentModel" gltf-model="#envModel" position="0 0 0" rotation="0 0 0" scale="1 1 1"></a-entity>
+
+    <!-- ====== Camera rig with movement-controls so player walks inside GLB ====== -->
+    <a-entity id="cameraRig"
+              position="0 0 4"
+              movement-controls="fly: false; speed: 0.12; camera: #camera">
+
       <a-entity id="camera" camera look-controls="pointerLockEnabled: false" position="0 1.6 0"></a-entity>
 
-      <!-- left controller -->
+      <!-- LEFT CONTROLLER (child of rig, so follows camera) -->
       <a-entity id="leftHand"
                 laser-controls="hand: left"
                 raycaster="objects: .clickable; far: 30;"
@@ -288,7 +285,7 @@
                 class="controller">
       </a-entity>
 
-      <!-- right controller -->
+      <!-- RIGHT CONTROLLER -->
       <a-entity id="rightHand"
                 laser-controls="hand: right"
                 raycaster="objects: .clickable; far: 30;"
@@ -297,22 +294,16 @@
       </a-entity>
     </a-entity>
 
-    <!-- sounds (provide your asset files at these paths) -->
-    <a-assets>
-      <!-- make sure assets exist on your server; if not, remove sound usage or replace -->
-      <audio id="correctAudio" src="assets/correct.wav"></audio>
-      <audio id="wrongAudio" src="assets/wrong.wav"></audio>
-    </a-assets>
-
+    <!-- sounds (wrappers with sound components) -->
     <a-entity id="correctSound" sound="src: #correctAudio; autoplay: false; positional: false"></a-entity>
     <a-entity id="wrongSound" sound="src: #wrongAudio; autoplay: false; positional: false"></a-entity>
 
-    <!-- bins (clickable) -->
-    <a-cylinder id="bioBin" class="bin clickable" position="-10 1 -4" radius="0.9" height="1.4" color="#388e3c" data-accept="bio">
+    <!-- ====== BINS (clickable) ====== -->
+    <a-cylinder id="bioBin" class="bin clickable" position="-6 1 -4" radius="0.9" height="1.4" color="#388e3c" data-accept="bio">
       <a-text value="BIO" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
 
-    <a-cylinder id="nonBioBin" class="bin clickable" position="-5 1 -4" radius="0.9" height="1.4" color="#b71c1c" data-accept="nonbio">
+    <a-cylinder id="nonBioBin" class="bin clickable" position="-3 1 -4" radius="0.9" height="1.4" color="#b71c1c" data-accept="nonbio">
       <a-text value="NON-BIO" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
 
@@ -320,17 +311,17 @@
       <a-text value="PAPER" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
 
-    <a-cylinder id="metalBin" class="bin clickable" position="5 1 -4" radius="0.9" height="1.4" color="#616161" data-accept="metal">
+    <a-cylinder id="metalBin" class="bin clickable" position="3 1 -4" radius="0.9" height="1.4" color="#616161" data-accept="metal">
       <a-text value="METAL" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
 
-    <a-cylinder id="glassBin" class="bin clickable" position="10 1 -4" radius="0.9" height="1.4" color="#1565c0" data-accept="glass">
+    <a-cylinder id="glassBin" class="bin clickable" position="6 1 -4" radius="0.9" height="1.4" color="#1565c0" data-accept="glass">
       <a-text value="GLASS" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
 
-    <!-- UI panel -->
-    <a-entity id="infoPanel" position="0 3 -2" look-at="#camera">
-      <a-plane color="#000" opacity="0.65" width="2.6" height="1.3" radius="0.1"></a-plane>
+    <!-- ====== UI PANEL ====== -->
+    <a-entity id="infoPanel" position="0 2.2 -2" look-at="#camera">
+      <a-plane color="#000" opacity="0.65" width="2.6" height="1.3"></a-plane>
 
       <a-text value="How to Play:\n- Click a trash to pick it up.\n- Click the correct bin to dispose.\n- +10 for correct, -5 for wrong."
               align="center" color="#fff" width="3" position="0 0.35 0.02"></a-text>
