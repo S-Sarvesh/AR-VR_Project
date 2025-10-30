@@ -53,27 +53,33 @@
         this.worldMessage.setAttribute('look-at', '#camera');
         this.camera.appendChild(this.worldMessage);
 
+        // Hook controller triggerdown to fallback controllerClick (keeps compatibility)
         const controllers = this.sceneEl.querySelectorAll('[laser-controls]');
         controllers.forEach(ctrl => {
           ctrl.addEventListener('triggerdown', () => this.controllerClick(ctrl));
         });
 
-        this.resetBtn.addEventListener('click', this.resetGame);
-        this.resetBtn.addEventListener('triggerdown', this.resetGame);
+        // Buttons
+        if (this.resetBtn) {
+          this.resetBtn.addEventListener('click', this.resetGame);
+          this.resetBtn.addEventListener('triggerdown', this.resetGame);
+        }
 
         this.sceneEl.addEventListener('mousedown', this.onMouseDown);
+
+        // Bind bins so clicking them (directly) works
+        this._bindBinsDirect();
 
         this.spawnTrash(12);
         this.updateScoreUI();
       },
 
+      // direct controller's raycaster intersections handler (keeps older code working)
       controllerClick(controllerEl) {
         const rc = controllerEl.components.raycaster;
         if (!rc || !rc.intersections.length) return;
-
         const hit = rc.intersections[0].el;
         if (!hit) return;
-
         this.handleClick(hit);
       },
 
@@ -88,7 +94,7 @@
         raycaster.setFromCamera(mouse, cameraObj);
 
         const clickableEls = Array.from(this.sceneEl.querySelectorAll('.clickable'));
-        const objects = clickableEls.map(el => el.object3D);
+        const objects = clickableEls.map(el => el.object3D).filter(Boolean);
         const intersects = raycaster.intersectObjects(objects, true);
 
         if (intersects.length > 0) {
@@ -99,16 +105,17 @@
       },
 
       handleClick(el) {
+        if (!el) return;
         if (el.classList.contains('trash'))
           this.pickTrash(el.getAttribute('data-type'), el.getAttribute('data-label'), el);
 
-        if (el.classList.contains('bin'))
+        else if (el.classList.contains('bin'))
           this.handleBinClick(el);
 
-        if (el.id === 'resetBtn3D')
+        else if (el.id === 'resetBtn3D')
           this.resetGame();
 
-        if (el.id === 'homeButton')
+        else if (el.id === 'homeButton')
           window.location.href = 'index.html';
       },
 
@@ -144,37 +151,29 @@
           label.setAttribute('look-at', '#camera');
           ent.appendChild(label);
 
+          // Add direct click binding to each spawned trash so explicit click events work
+          ent.addEventListener('click', () => {
+            // If another code path triggers pickTrash recursively, the bound guard in pickTrash will prevent duplicates
+            this.pickTrash(rand.type, rand.label, ent);
+          });
+
           this.sceneEl.appendChild(ent);
         }
       },
 
-      // ✅ CLICKABLE TRASH
+      // clickable trash
       pickTrash(type, label, el) {
-        if (!el._clickBound) {
-          el._clickBound = true;
-          el.addEventListener('click', () => {
-            if (!this.heldType) {
-              this.pickTrash(type, label, el);
-            }
-          });
-        }
-
         if (this.heldType) return;
 
         this.heldType = type;
         this.heldLabel = label;
-        this.holdingText.setAttribute('value', `Picked: ${label}`);
+        if (this.holdingText) this.holdingText.setAttribute('value', `Picked: ${label}`);
 
         if (el && el.parentNode) el.remove();
       },
 
-      // ✅ CLICKABLE BINS
+      // clickable bins
       handleBinClick(binEl) {
-        if (!binEl._clickBound) {
-          binEl._clickBound = true;
-          binEl.addEventListener('click', () => this.handleBinClick(binEl));
-        }
-
         if (!this.heldType) return;
 
         const binType = binEl.getAttribute('data-accept');
@@ -183,10 +182,14 @@
 
         if (this.heldType === binType) {
           this.score = Math.min(this.MAX_SCORE, this.score + 10);
-          correctSound.components.sound.playSound();
+          if (correctSound && correctSound.components && correctSound.components.sound) {
+            correctSound.components.sound.playSound();
+          } else if (correctSound && correctSound.play) { correctSound.play(); }
         } else {
           this.score = Math.max(0, this.score - 5);
-          wrongSound.components.sound.playSound();
+          if (wrongSound && wrongSound.components && wrongSound.components.sound) {
+            wrongSound.components.sound.playSound();
+          } else if (wrongSound && wrongSound.play) { wrongSound.play(); }
         }
 
         this.updateScoreUI();
@@ -199,15 +202,17 @@
 
         this.heldType = null;
         this.heldLabel = null;
-        this.holdingText.setAttribute('value', 'Picked: None');
+        if (this.holdingText) this.holdingText.setAttribute('value', 'Picked: None');
 
         setTimeout(() => this.spawnTrash(1), 700);
       },
 
       updateScoreUI() {
+        if (!this.scoreText || !this.scoreBarFill) return;
         this.scoreText.setAttribute('value', `Score: ${this.score}`);
         const width = (this.score / this.MAX_SCORE) * 1.6;
-        this.scoreBarFill.setAttribute('geometry', 'width', width);
+        // Use setAttribute with object for geometry to be safe
+        this.scoreBarFill.setAttribute('geometry', { primitive: 'box', width: width, height: 0.15, depth: 0.02 });
         this.scoreBarFill.setAttribute('position', `${-0.8 + width / 2} -0.5 0.01`);
       },
 
@@ -216,11 +221,23 @@
         this.heldType = null;
         this.heldLabel = null;
         this.score = 0;
-        this.holdingText.setAttribute('value', 'Picked: None');
+        if (this.holdingText) this.holdingText.setAttribute('value', 'Picked: None');
         this.updateScoreUI();
         this.worldMessage.setAttribute('visible', 'false');
         this.worldMessage.setAttribute('material', 'opacity', 1);
         this.spawnTrash(12);
+      },
+
+      // also bind bins directly on load so they respond to click events
+      _bindBinsDirect() {
+        const bins = document.querySelectorAll('.bin');
+        bins.forEach(bin => {
+          bin.classList.add('clickable'); // ensure class present
+          if (!bin._directBound) {
+            bin._directBound = true;
+            bin.addEventListener('click', () => this.handleBinClick(bin));
+          }
+        });
       }
     });
   </script>
@@ -232,25 +249,39 @@
                         groundColor: #3b5d2a; groundColor2: #4c6b37; groundYScale: 1;
                         groundDensity: 32; groundFrequency: 8; skyColor: #b3e5fc; fog: 0.9">
 
+    <!-- camera rig (controllers are children so they follow the rig) -->
     <a-entity id="cameraRig" position="0 0.2 4" movement-controls="speed: 0.05" wasd-controls>
       <a-camera id="camera" look-controls="pointerLockEnabled: false"></a-camera>
 
-        <a-entity laser-controls="hand: left" raycaster="objects: .clickable; far: 30;" cursor="fuse: false" super-hands>
+      <!-- LEFT HAND (desktop default position set) -->
+      <a-entity id="leftHand"
+                position="-0.3 1.4 -0.5"
+                laser-controls="hand: left"
+                raycaster="objects: .clickable; far: 30;"
+                cursor="fuse: false"
+                super-hands>
         <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30"
-              material="color:#ff4444; opacity:0.45; shader: flat"></a-box>
+               material="color:#ff4444; opacity:0.45; shader: flat"></a-box>
       </a-entity>
 
-      <a-entity laser-controls="hand: right" raycaster="objects: .clickable; far: 30;" cursor="fuse: false" super-hands>
+      <!-- RIGHT HAND (desktop default position set) -->
+      <a-entity id="rightHand"
+                position="0.3 1.4 -0.5"
+                laser-controls="hand: right"
+                raycaster="objects: .clickable; far: 30;"
+                cursor="fuse: false"
+                super-hands>
         <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30"
-              material="color:#44ff44; opacity:0.45; shader: flat"></a-box>
+               material="color:#44ff44; opacity:0.45; shader: flat"></a-box>
       </a-entity>
+
     </a-entity>
 
-  
-
+    <!-- sounds -->
     <a-sound id="correctSound" src="assets/correct.wav" autoplay="false" positional="false"></a-sound>
     <a-sound id="wrongSound" src="assets/wrong.wav" autoplay="false" positional="false"></a-sound>
 
+    <!-- bins -->
     <a-cylinder id="bioBin" class="bin clickable" position="-10 1 -4" radius="0.9" height="1.4" color="#388e3c" data-accept="bio">
       <a-text value="BIO" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
@@ -271,6 +302,7 @@
       <a-text value="GLASS" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
 
+    <!-- UI panel -->
     <a-entity id="infoPanel" position="0 3 -2" look-at="#camera">
       <a-plane color="#000" opacity="0.65" width="2.6" height="1.3"></a-plane>
 
@@ -300,6 +332,7 @@
 
   </a-scene>
 
+  <!-- explicit raycast helper (dispatches clicks for triggerdown) -->
   <script>
     (function () {
       AFRAME.registerComponent('explicit-raycast-on-trigger', {
@@ -339,9 +372,8 @@
         }
       });
 
-      document.querySelectorAll('a-scene').forEach(s =>
-        s.setAttribute('explicit-raycast-on-trigger', '')
-      );
+      // attach to all scenes
+      document.querySelectorAll('a-scene').forEach(s => s.setAttribute('explicit-raycast-on-trigger', ''));
     })();
   </script>
 </body>
