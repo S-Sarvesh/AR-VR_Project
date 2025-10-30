@@ -1,283 +1,273 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Trash Segregation – VR + Desktop Edition</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Trash Sorting Game – Fixed</title>
 
-  <!-- A-Frame + Components -->
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-rounded@1.0.0/aframe-rounded.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
-  <script src="https://unpkg.com/aframe-super-hands/dist/aframe-super-hands.min.js"></script>
+    <!-- A-Frame + Extras -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
-  <style>
-    html, body { margin: 0; height: 100%; overflow: hidden; }
-    a-scene { width: 100%; height: 100%; }
-  </style>
-
-  <!-- ✅ GAME MANAGER (cleaned + optimized) -->
-  <script>
-    AFRAME.registerComponent('game-manager', {
-      init: function () {
-        this.heldType = null;
-        this.heldLabel = null;
-        this.score = 0;
-        this.MAX_SCORE = 50;
-        this.sceneEl = this.el.sceneEl;
-
-        this.pickTrash = this.pickTrash.bind(this);
-        this.handleBinClick = this.handleBinClick.bind(this);
-        this.resetGame = this.resetGame.bind(this);
-        this.onMouseDown = this.onMouseDown.bind(this);
-
-        this.sceneEl.addEventListener('loaded', () => this.onLoaded());
-      },
-
-      onLoaded() {
-        this.camera = document.getElementById('camera');
-        this.scoreText = document.getElementById('scoreText');
-        this.scoreBarFill = document.getElementById('scoreBarFill');
-        this.holdingText = document.getElementById('holdingText');
-        this.resetBtn = document.getElementById('resetBtn3D');
-
-        // ✅ Floating message
-        this.worldMessage = document.createElement('a-text');
-        this.worldMessage.setAttribute('value', '');
-        this.worldMessage.setAttribute('align', 'center');
-        this.worldMessage.setAttribute('color', '#00FF00');
-        this.worldMessage.setAttribute('width', '3');
-        this.worldMessage.setAttribute('position', '0 -0.5 -2');
-        this.worldMessage.setAttribute('visible', 'false');
-        this.worldMessage.setAttribute('look-at', '#camera');
-        this.camera.appendChild(this.worldMessage);
-
-        // ✅ VR controller trigger clicks
-        const controllers = this.sceneEl.querySelectorAll('[laser-controls]');
-        controllers.forEach(ctrl => {
-          ctrl.addEventListener('triggerdown', () => this.controllerClick(ctrl));
-        });
-
-        this.resetBtn.addEventListener('click', this.resetGame);
-        this.sceneEl.addEventListener('mousedown', this.onMouseDown);
-
-        this.spawnTrash(12);
-        this.updateScoreUI();
-      },
-
-      controllerClick(controllerEl) {
-        const rc = controllerEl.components.raycaster;
-        if (!rc || !rc.intersections.length) return;
-        const hit = rc.intersections[0].el;
-        if (!hit) return;
-        this.handleClick(hit);
-      },
-
-      onMouseDown(evt) {
-        const mouse = new THREE.Vector2();
-        const rect = this.sceneEl.canvas.getBoundingClientRect();
-
-        mouse.x = ((evt.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((evt.clientY - rect.top) / rect.height) * 2 + 1;
-
-        const camObj = this.camera.getObject3D('camera');
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, camObj);
-
-        const clickable = [...this.sceneEl.querySelectorAll('.clickable')];
-        const objs = clickable.map(e => e.object3D);
-
-        const hits = raycaster.intersectObjects(objs, true);
-        if (hits.length === 0) return;
-
-        let el = hits[0].object.el;
-        while (el && !el.classList.contains('.clickable')) el = el.parentNode;
-        if (el) this.handleClick(el);
-      },
-
-      handleClick(el) {
-        if (el.classList.contains('trash'))
-          this.pickTrash(el.getAttribute('data-type'), el.getAttribute('data-label'), el);
-
-        if (el.classList.contains('bin')) this.handleBinClick(el);
-
-        if (el.id === 'resetBtn3D') this.resetGame();
-        if (el.id === 'homeButton') window.location.href = 'index.html';
-      },
-
-      spawnTrash(count = 12) {
-        const types = [
-          { type: 'bio', model: 'models/fruits.glb', label: 'Food/Leaf', scale: '0.75 0.75 0.75' },
-          { type: 'nonbio', model: 'models/plastic.glb', label: 'Plastic/Can', scale: '1.125 1.125 1.125' },
-          { type: 'paper', model: 'models/paper_boat.glb', label: 'Paper/Cardboard', scale: '1.5 1.5 1.5' },
-          { type: 'metal', model: 'models/metal.glb', label: 'Metal Scrap', scale: '0.75 0.75 0.75' },
-          { type: 'glass', model: 'models/glass.glb', label: 'Glass Bottle', scale: '1.125 1.125 1.125' }
-        ];
-
-        for (let i = 0; i < count; i++) {
-          const rand = types[Math.floor(Math.random() * types.length)];
-          const x = -9 + Math.random() * 18;
-          const z = -7 + Math.random() * 6;
-
-          const ent = document.createElement('a-entity');
-          ent.classList.add('trash', '.clickable');
-          ent.setAttribute('position', `${x} 0.3 ${z}`);
-          ent.setAttribute('rotation', `0 ${Math.random() * 360} 0`);
-          ent.setAttribute('scale', rand.scale);
-          ent.setAttribute('gltf-model', rand.model);
-          ent.setAttribute('data-type', rand.type);
-          ent.setAttribute('data-label', rand.label);
-
-          const label = document.createElement('a-text');
-          label.setAttribute('value', rand.label);
-          label.setAttribute('align', 'center');
-          label.setAttribute('position', '0 0.6 0');
-          label.setAttribute('scale', '0.8 0.8 0.8');
-          label.setAttribute('color', '#000');
-          label.setAttribute('look-at', '#camera');
-          ent.appendChild(label);
-
-          this.sceneEl.appendChild(ent);
-        }
-      },
-
-      pickTrash(type, label, el) {
-        if (this.heldType) return;
-        this.heldType = type;
-        this.heldLabel = label;
-        this.holdingText.setAttribute('value', `Picked: ${label}`);
-        el.remove();
-      },
-
-      handleBinClick(binEl) {
-        if (!this.heldType) return;
-
-        const correct = this.heldType === binEl.getAttribute('data-accept');
-        const sound = correct ? 'correctSound' : 'wrongSound';
-
-        document.getElementById(sound).components.sound.playSound();
-
-        this.score = Math.min(
-          this.MAX_SCORE,
-          this.score + (correct ? 10 : -5)
-        );
-
-        this.updateScoreUI();
-
-        if (this.score >= this.MAX_SCORE) {
-          this.worldMessage.setAttribute('value', '🎉 Congratulations!\nTrash segregation keeps our environment clean!');
-          this.worldMessage.setAttribute('visible', true);
-        }
-
-        setTimeout(() => this.spawnTrash(1), 700);
-
-        this.heldType = null;
-        this.heldLabel = null;
-        this.holdingText.setAttribute('value', 'Picked: None');
-      },
-
-      updateScoreUI() {
-        this.scoreText.setAttribute('value', `Score: ${this.score}`);
-        const width = (this.score / this.MAX_SCORE) * 1.6;
-        this.scoreBarFill.setAttribute('geometry', `primitive: box; width: ${width}; height: 0.15; depth: 0.02`);
-        this.scoreBarFill.setAttribute('position', `${-0.8 + width / 2} -0.5 0.01`);
-      },
-
-      resetGame() {
-        document.querySelectorAll('.trash').forEach(t => t.remove());
-        this.heldType = null;
-        this.score = 0;
-        this.holdingText.setAttribute('value', 'Picked: None');
-        this.updateScoreUI();
-        this.worldMessage.setAttribute('visible', false);
-        this.spawnTrash(12);
+    <style>
+      /* Hide raycaster line safely */
+      .raycaster-line,
+      .rayLine {
+        display: none !important;
       }
-    });
-  </script>
-</head>
+    </style>
+  </head>
 
-<body>
-  <a-scene game-manager environment="preset: forest; ground: flat; groundColor: #3b5d2a; skyColor: #b3e5fc">
-
-    <!-- ✅ CAMERA -->
-    <a-entity id="cameraRig" position="0 0.2 4" movement-controls="speed: 0.05" wasd-controls>
-      <a-camera id="camera" look-controls="pointerLockEnabled: false"></a-camera>
-    </a-entity>
-
-    <!-- ✅ CONTROLLERS FIXED — MODELS HIDDEN -->
-    <a-entity 
-      id="leftController"
-      laser-controls="hand: left"
-      super-hands
-      raycaster="objects: .clickable; far: 30;"
-      visible="false"
+  <body>
+    <a-scene
+      cursor="rayOrigin: mouse"
+      renderer="antialias: true"
+      background="color: #87CEFA"
     >
-      <a-box class="ray-viz" width="0.02" height="0.02" depth="30" color="#ff4444" opacity="0.45"
-             position="0 0 -15"></a-box>
-    </a-entity>
 
-    <a-entity 
-      id="rightController"
-      laser-controls="hand: right"
-      super-hands
-      raycaster="objects: .clickable; far: 30;"
-      visible="false"
-    >
-      <a-box class="ray-viz" width="0.02" height="0.02" depth="30" color="#44ff44" opacity="0.45"
-             position="0 0 -15"></a-box>
-    </a-entity>
+      <!-- ========================================================= -->
+      <!-- CAMERA + ONE RIGHT CONTROLLER (INVISIBLE)                 -->
+      <!-- ========================================================= -->
 
-    <!-- ✅ SOUNDS -->
-    <a-sound id="correctSound" src="assets/correct.wav" autoplay="false" positional="false"></a-sound>
-    <a-sound id="wrongSound" src="assets/wrong.wav" autoplay="false" positional="false"></a-sound>
+      <a-entity id="player" position="0 1.6 3">
+        <a-camera></a-camera>
 
-    <!-- ✅ BINS -->
-    <a-cylinder id="bioBin" class="bin clickable" position="-10 1 -4" radius="0.9" height="1.4" color="#388e3c" data-accept="bio">
-      <a-text value="BIO" align="center" position="0 1.1 0.15" width="3" color="#000"></a-text>
-    </a-cylinder>
-
-    <a-cylinder id="nonBioBin" class="bin clickable" position="-5 1 -4" radius="0.9" height="1.4" color="#b71c1c" data-accept="nonbio">
-      <a-text value="NON-BIO" align="center" position="0 1.1 0.15" width="3" color="#000"></a-text>
-    </a-cylinder>
-
-    <a-cylinder id="paperBin" class="bin clickable" position="0 1 -4" radius="0.9" height="1.4" color="#fbc02d" data-accept="paper">
-      <a-text value="PAPER" align="center" position="0 1.1 0.15" width="3" color="#000"></a-text>
-    </a-cylinder>
-
-    <a-cylinder id="metalBin" class="bin clickable" position="5 1 -4" radius="0.9" height="1.4" color="#616161" data-accept="metal">
-      <a-text value="METAL" align="center" position="0 1.1 0.15" width="3" color="#000"></a-text>
-    </a-cylinder>
-
-    <a-cylinder id="glassBin" class="bin clickable" position="10 1 -4" radius="0.9" height="1.4" color="#1565c0" data-accept="glass">
-      <a-text value="GLASS" align="center" position="0 1.1 0.15" width="3" color="#000"></a-text>
-    </a-cylinder>
-
-    <!-- ✅ UI PANEL -->
-    <a-entity id="infoPanel" position="0 3 -2" look-at="#camera">
-      <a-plane color="#000" opacity="0.65" width="2.6" height="1.3"></a-plane>
-      <a-text value="How to Play:\n- Click a trash to pick it up.\n- Click the correct bin.\n- +10 correct, -5 wrong."
-              align="center" color="#fff" width="3" position="0 0.35 0.02"></a-text>
-
-      <a-text id="holdingText" value="Picked: None" align="center" color="#ffeb3b" width="2" position="0 0 0.02"></a-text>
-      <a-text id="scoreText" value="Score: 0" align="center" color="#ffeb3b" width="2.5" position="0 -0.25 0.02"></a-text>
-
-      <a-entity geometry="primitive: box; width: 1.6; height: 0.15; depth: 0.02" position="0 -0.5 0" material="color: #555"></a-entity>
-      <a-entity id="scoreBarFill" geometry="primitive: box; width: 0; height: 0.15; depth: 0.02"
-                position="-0.8 -0.5 0.01" material="color: #4caf50"></a-entity>
-
-      <a-entity id="resetBtn3D" class="clickable" position="0 -0.75 0.03">
-        <a-box color="#4caf50" width="0.9" height="0.3" depth="0.1"></a-box>
-        <a-text value="RESET" align="center" color="#fff" width="2" position="0 0 0.08"></a-text>
+        <!-- Right-hand VR controller (hidden model, input still works) -->
+        <a-entity
+          id="rightHand"
+          laser-controls="hand: right"
+          raycaster="objects: .clickable"
+          visible="false"
+        ></a-entity>
       </a-entity>
 
-      <a-entity id="homeButton" class="clickable"
-                geometry="primitive: box; width: 0.5; height: 0.2; depth: 0.05"
-                material="color: #4A90E2; shader: flat"
-                position="-1.0 0.55 0.05"
-                text="value: HOME; align: center; color: #FFF; width: 2; zOffset: 0.03">
+      <!-- ========================================================= -->
+      <!-- LIGHTS / ENVIRONMENT                                      -->
+      <!-- ========================================================= -->
+
+      <a-entity light="type: directional; intensity: 1" position="1 3 2"></a-entity>
+      <a-entity light="type: ambient; intensity: 0.7"></a-entity>
+
+      <!-- Floor -->
+      <a-plane
+        rotation="-90 0 0"
+        width="30"
+        height="30"
+        color="#4CAF50"
+      ></a-plane>
+
+      <!-- ========================================================= -->
+      <!-- CLICKABLE LOGIC COMPONENT                                 -->
+      <!-- ========================================================= -->
+
+      <script>
+        AFRAME.registerComponent("make-clickable", {
+          init() {
+            this.el.classList.add("clickable");
+            this.el.addEventListener("click", () => {
+              this.el.sceneEl.systems["game-manager"]?.handleClick(this.el);
+            });
+          }
+        });
+      </script>
+
+      <!-- ========================================================= -->
+      <!-- EXPLICIT RAYCAST — REPLACES CONTROLLER RAY                -->
+      <!-- ========================================================= -->
+
+      <script>
+        AFRAME.registerComponent("explicit-raycast", {
+          init: function () {
+            const player = document.querySelector("#player");
+            const rightHand = document.querySelector("#rightHand");
+            const scene = this.el.sceneEl;
+
+            window.addEventListener("triggerdown", () => {
+              const origin = new THREE.Vector3();
+              const direction = new THREE.Vector3();
+
+              rightHand.object3D.getWorldPosition(origin);
+              rightHand.object3D.getWorldDirection(direction);
+
+              const raycaster = new THREE.Raycaster(origin, direction, 0, 100);
+
+              const clickable = Array.from(scene.querySelectorAll(".clickable"));
+              const targets = clickable.map(el => el.object3D);
+
+              const hits = raycaster.intersectObjects(targets, true);
+
+              if (hits.length > 0) {
+                const clickedObj = hits[0].object.el;
+                clickedObj.dispatchEvent(new MouseEvent("click"));
+              }
+            });
+          }
+        });
+      </script>
+
+      <!-- Attach explicit raycast to scene -->
+      <a-entity explicit-raycast></a-entity>
+
+      <!-- ========================================================= -->
+      <!-- GAME MANAGER                                              -->
+      <!-- ========================================================= -->
+
+      <script>
+        AFRAME.registerSystem("game-manager", {
+          init() {
+            this.score = 0;
+            this.updateScoreDisplay();
+            this.spawnInitialTrash();
+          },
+
+          updateScoreDisplay() {
+            document.querySelector("#scoreText").setAttribute(
+              "value",
+              "Score: " + this.score
+            );
+          },
+
+          handleClick(el) {
+            if (el.classList.contains("trash")) {
+              this.heldTrash = el;
+              return;
+            }
+
+            if (el.classList.contains("bin") && this.heldTrash) {
+              const expected = this.heldTrash.getAttribute("data-type");
+              const actual = el.getAttribute("data-bin");
+
+              if (expected === actual) {
+                this.score += 10;
+                this.heldTrash.parentNode.removeChild(this.heldTrash);
+
+                this.spawnTrash();
+              } else {
+                this.score -= 5;
+              }
+
+              this.updateScoreDisplay();
+              this.heldTrash = null;
+            }
+
+            if (el.id === "resetBtn3D") {
+              location.reload();
+            }
+
+            if (el.id === "homeButton") {
+              window.location.href = "../index.html";
+            }
+          },
+
+          spawnInitialTrash() {
+            for (let i = 0; i < 6; i++) this.spawnTrash();
+          },
+
+          spawnTrash() {
+            const types = ["organic", "plastic", "metal"];
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            const trash = document.createElement("a-box");
+            trash.setAttribute("class", "trash");
+            trash.setAttribute("data-type", type);
+            trash.setAttribute("make-clickable", "");
+            trash.setAttribute("depth", 0.3);
+            trash.setAttribute("height", 0.3);
+            trash.setAttribute("width", 0.3);
+            trash.setAttribute("color", "#"+Math.floor(Math.random()*16777215).toString(16));
+
+            trash.setAttribute(
+              "position",
+              `${(Math.random() - 0.5) * 6} 0.3 ${(Math.random() - 0.5) * -5}`
+            );
+
+            this.el.appendChild(trash);
+          }
+        });
+      </script>
+
+      <!-- ========================================================= -->
+      <!-- BINS (CLICKABLE)                                          -->
+      <!-- ========================================================= -->
+
+      <a-cylinder
+        position="-3 0.5 -4"
+        radius="0.6"
+        height="1"
+        color="brown"
+        class="bin"
+        data-bin="organic"
+        make-clickable
+      ></a-cylinder>
+
+      <a-cylinder
+        position="0 0.5 -4"
+        radius="0.6"
+        height="1"
+        color="blue"
+        class="bin"
+        data-bin="plastic"
+        make-clickable
+      ></a-cylinder>
+
+      <a-cylinder
+        position="3 0.5 -4"
+        radius="0.6"
+        height="1"
+        color="grey"
+        class="bin"
+        data-bin="metal"
+        make-clickable
+      ></a-cylinder>
+
+      <!-- ========================================================= -->
+      <!-- UI: SCORE + RESET + HOME                                 -->
+      <!-- ========================================================= -->
+
+      <a-entity position="0 2 -2">
+        <a-text
+          id="scoreText"
+          value="Score: 0"
+          align="center"
+          color="black"
+          width="4"
+          position="0 0.4 0"
+        ></a-text>
+
+        <a-plane
+          id="resetBtn3D"
+          make-clickable
+          color="#ff5555"
+          width="1.2"
+          height="0.4"
+          position="0 -0.3 0"
+        >
+          <a-text
+            value="RESET"
+            color="white"
+            align="center"
+            width="2"
+            position="0 0 0.01"
+          ></a-text>
+        </a-plane>
+
+        <a-plane
+          id="homeButton"
+          make-clickable
+          color="#5555ff"
+          width="1.2"
+          height="0.4"
+          position="0 -0.9 0"
+        >
+          <a-text
+            value="HOME"
+            color="white"
+            align="center"
+            width="2"
+            position="0 0 0.01"
+          ></a-text>
+        </a-plane>
       </a-entity>
-    </a-entity>
-  </a-scene>
-</body>
+
+    </a-scene>
+  </body>
 </html>
