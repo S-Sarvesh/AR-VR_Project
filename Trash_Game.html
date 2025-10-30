@@ -92,7 +92,7 @@
         if (hits.length === 0) return;
 
         let el = hits[0].object.el;
-        while (el && !el.classList.contains('clickable')) el = el.parentNode;
+        while (el && !el.classList.contains('.clickable')) el = el.parentNode;
         if (el) this.handleClick(el);
       },
 
@@ -121,7 +121,7 @@
           const z = -7 + Math.random() * 6;
 
           const ent = document.createElement('a-entity');
-          ent.classList.add('trash', 'clickable');
+          ent.classList.add('trash', '.clickable');
           ent.setAttribute('position', `${x} 0.3 ${z}`);
           ent.setAttribute('rotation', `0 ${Math.random() * 360} 0`);
           ent.setAttribute('scale', rand.scale);
