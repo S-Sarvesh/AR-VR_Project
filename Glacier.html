@@ -8,11 +8,124 @@
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
   <script src="https://unpkg.com/aframe-super-hands/dist/aframe-super-hands.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: linear-gradient(to bottom, #1e3c72, #2a5298);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .info-panel {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      max-width: 300px;
+      pointer-events: none;
+    }
+    .controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 15px;
+      pointer-events: auto;
+    }
+    .control-btn {
+      background: linear-gradient(to bottom, #4CAF50, #2E7D32);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s;
+      pointer-events: auto;
+    }
+    .control-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    }
+    .control-btn.reset {
+      background: linear-gradient(to bottom, #f44336, #c62828);
+    }
+    .title {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+    }
+    .status {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      text-align: center;
+      font-size: 18px;
+      pointer-events: none;
+    }
+    .progress-container {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 300px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, #4dd0e1, #00acc1);
+      border-radius: 10px;
+      transition: width 0.3s;
+    }
+  </style>
 </head>
 <body class="bg-sky-400">
 
-  <div class="relative w-screen h-screen">
+  <div class="ui-overlay">
+    <div class="title">VR Glacier Melt Visualization</div>
+    <div class="status" id="status-text">Ready to start simulation</div>
+    <div class="progress-container">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="controls">
+      <button class="control-btn" id="start-btn">Start Simulation</button>
+      <button class="control-btn reset" id="reset-btn">Reset</button>
+    </div>
+    <div class="info-panel">
+      <h3>About This Simulation</h3>
+      <p>This VR experience demonstrates how greenhouse gas emissions contribute to glacier melting and sea level rise. Use the VR controllers to interact with the environment.</p>
+    </div>
+  </div>
 
+  <div class="relative w-screen h-screen">
     <a-scene embedded="true" vr-mode-ui="enabled: true" renderer="colorManagement: true">
       
       <a-entity environment="preset: snowy; ground: flat; groundColor: #e6f2ff; groundColor2: #fafafa; skyType: atmosphere; skyColor: #88c6ff; sunPosition: 0 0.1 -1; fog: 0.8"></a-entity>
@@ -24,24 +137,23 @@
           <a-entity cursor="rayOrigin: mouse"
                     raycaster="objects: .clickable; far: 5;">
           </a-entity>
-
-          </a-camera>
+        </a-camera>
         
-  <a-entity hand-controls="hand: left"
-    laser-controls="hand: left"
-    raycaster="objects: .clickable; far: 30;"
-    cursor="fuse: false"
-    super-hands>
-    <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30" material="color:#ff4444; opacity:0.45; shader: flat"></a-box>
-  </a-entity>
+        <a-entity hand-controls="hand: left"
+          laser-controls="hand: left"
+          raycaster="objects: .clickable; far: 30;"
+          cursor="fuse: false"
+          super-hands>
+          <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30" material="color:#ff4444; opacity:0.45; shader: flat"></a-box>
+        </a-entity>
 
-  <a-entity hand-controls="hand: right"
-    laser-controls="hand: right"
-    raycaster="objects: .clickable; far: 30;"
-    cursor="fuse: false"
-    super-hands>
-    <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30" material="color:#44ff44; opacity:0.45; shader: flat"></a-box>
-  </a-entity>
+        <a-entity hand-controls="hand: right"
+          laser-controls="hand: right"
+          raycaster="objects: .clickable; far: 30;"
+          cursor="fuse: false"
+          super-hands>
+          <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30" material="color:#44ff44; opacity:0.45; shader: flat"></a-box>
+        </a-entity>
 
       </a-entity>
 
@@ -89,6 +201,8 @@
           color="#4dd0e1"
           position="-0.9 -0.3 0.01"> </a-plane>
       </a-entity>
+      
+      <!-- Glacier groups -->
       <a-entity position="0 0 -10">
         <a-entity light="type: ambient; color: #ffffff; intensity: 0.6"></a-entity>
         <a-dodecahedron class="iceberg" position="0 1.5 -5" scale="2 3 2" data-base-pos-y="1.5" data-base-scale-y="3" material="color: #14a9eeff; roughness: 0.4; opacity: 1;"></a-dodecahedron>
@@ -179,7 +293,6 @@
       </a-plane>
 
     </a-scene>
-
   </div>
 
   <script>
@@ -188,7 +301,7 @@
       AFRAME.registerComponent('explicit-raycast-on-trigger', {
         init: function () {
           const sceneEl = this.el;
-          const DEBUG = true;
+          const DEBUG = false;
           sceneEl.addEventListener('loaded', () => {
             const controllers = sceneEl.querySelectorAll('[laser-controls], [hand-controls]');
             controllers.forEach(ctrl => {
@@ -232,7 +345,16 @@
 
                 let el = hit.object.el;
                 while (el && !el.classList.contains('clickable')) el = el.parentNode;
-                if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                if (el) {
+                  el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                  
+                  // Add visual feedback for VR interaction
+                  const originalColor = el.getAttribute('material').color;
+                  el.setAttribute('material', 'color', '#FFFF00');
+                  setTimeout(() => {
+                    el.setAttribute('material', 'color', originalColor);
+                  }, 200);
+                }
               });
             });
           });
@@ -241,7 +363,6 @@
 
       document.querySelectorAll('a-scene').forEach(s => s.setAttribute('explicit-raycast-on-trigger', ''));
     })();
-
   </script>
 
   <script>
@@ -252,6 +373,12 @@
       const meltLabel = document.getElementById('melt-label');
       const barFill = document.getElementById('bar-fill');
       const barFillBasePos = barFill.getAttribute('position');
+
+      // Get 2D UI elements
+      const startBtn2D = document.getElementById('start-btn');
+      const resetBtn2D = document.getElementById('reset-btn');
+      const statusText = document.getElementById('status-text');
+      const progressBar = document.getElementById('progress-bar');
 
       // === ADDED HOME BUTTON LOGIC ===
       const homeButton = document.getElementById("homeButton");
@@ -295,14 +422,18 @@
         barFill.setAttribute('width', fillWidth);
         barFill.setAttribute('position', { x: fillPosX, y: barFillBasePos.y, z: barFillBasePos.z });
 
-        // 3. Update Water Plane
+        // 3. Update 2D UI
+        progressBar.style.width = `${meltLevel}%`;
+        statusText.textContent = `Simulation: ${Math.round(meltLevel)}% complete`;
+
+        // 4. Update Water Plane
         const waterNewY = waterBaseY + (waterTargetY - waterBaseY) * k;
         const waterNewOpacity = waterBaseOpacity + (waterTargetOpacity - waterBaseOpacity) * k;
         
         water.setAttribute('position', `0 ${waterNewY} 0`);
         water.setAttribute('material', 'opacity', waterNewOpacity);
 
-        // 4. Update all Icebergs
+        // 5. Update all Icebergs
         icebergs.forEach(iceberg => {
           // Get original values from the data- attributes
           const basePosY = Number(iceberg.dataset.basePosY);
@@ -335,6 +466,7 @@
           meltLevel = 100;
           isSimulating = false;
           updateScene(meltLevel);
+          statusText.textContent = "Simulation complete!";
           cancelAnimationFrame(animationFrameId);
           return; // Stop the loop
         }
@@ -352,6 +484,7 @@
         if (isSimulating) return; // Don't start if already running
         isSimulating = true;
         cancelAnimationFrame(animationFrameId); // Clear any previous loop
+        statusText.textContent = "Simulation in progress...";
         
         // Record the start time and begin the animation loop
         const startTime = performance.now();
@@ -365,11 +498,19 @@
         isSimulating = false;
         cancelAnimationFrame(animationFrameId); // Stop any running simulation
         updateScene(0); // Reset everything to 0%
+        statusText.textContent = "Ready to start simulation";
       }
 
       // --- Attach event listeners to the 3D buttons ---
       startButton.addEventListener('click', startSimulation);
       resetButton.addEventListener('click', resetSimulation);
+      
+      // --- Attach event listeners to the 2D buttons ---
+      startBtn2D.addEventListener('click', startSimulation);
+      resetBtn2D.addEventListener('click', resetSimulation);
+      
+      // Initialize the scene
+      updateScene(0);
     });
   </script>
 
