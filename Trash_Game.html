@@ -14,6 +14,7 @@
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; }
     a-scene { width: 100%; height: 100%; }
+    .clickable { cursor: pointer; }
   </style>
 
   <script>
@@ -34,6 +35,7 @@
         this.handleBinClick = this.handleBinClick.bind(this);
         this.resetGame = this.resetGame.bind(this);
         this.onMouseDown = this.onMouseDown.bind(this);
+        this.handleClick = this.handleClick.bind(this);
       },
 
       _onSceneLoaded() {
@@ -64,8 +66,34 @@
 
         this.sceneEl.addEventListener('mousedown', this.onMouseDown);
 
+        // Add hover effects for better UX
+        this.addHoverEffects();
+
         this.spawnTrash(12);
         this.updateScoreUI();
+      },
+
+      addHoverEffects() {
+        // Add hover effects for clickable elements
+        const clickables = this.sceneEl.querySelectorAll('.clickable');
+        clickables.forEach(el => {
+          // Store original scale
+          el.setAttribute('data-original-scale', el.getAttribute('scale') || '1 1 1');
+          
+          // Add animation for hover effect
+          el.setAttribute('animation__hover', {
+            property: 'scale',
+            startEvents: 'mouseenter',
+            to: '1.1 1.1 1.1',
+            dur: 200
+          });
+          el.setAttribute('animation__hoverout', {
+            property: 'scale',
+            startEvents: 'mouseleave',
+            to: el.getAttribute('data-original-scale'),
+            dur: 200
+          });
+        });
       },
 
       controllerClick(controllerEl) {
@@ -92,16 +120,27 @@
 
         if (intersects.length > 0) {
           let el = intersects[0].object.el;
-          while (el && !el.classList.contains('clickable')) el = el.parentNode;
-          if (el) this.handleClick(el);
+          while (el && !el.classList.contains('clickable')) {
+            el = el.parentNode;
+          }
+          if (el) {
+            this.handleClick(el);
+          }
         }
       },
 
       handleClick(el) {
-        if (el.classList.contains('trash')) this.pickTrash(el.getAttribute('data-type'), el.getAttribute('data-label'), el);
-        if (el.classList.contains('bin')) this.handleBinClick(el);
-        if (el.id === 'resetBtn3D') this.resetGame();
-        if (el.id === 'homeButton') { window.location.href = 'index.html'; }
+        console.log('Clicked:', el);
+        
+        if (el.classList.contains('trash')) {
+          this.pickTrash(el.getAttribute('data-type'), el.getAttribute('data-label'), el);
+        } else if (el.classList.contains('bin')) {
+          this.handleBinClick(el);
+        } else if (el.id === 'resetBtn3D') {
+          this.resetGame();
+        } else if (el.id === 'homeButton') {
+          window.location.href = 'index.html';
+        }
       },
 
       spawnTrash(count = 12) {
@@ -126,6 +165,16 @@
           ent.setAttribute('gltf-model', rand.model);
           ent.setAttribute('data-type', rand.type);
           ent.setAttribute('data-label', rand.label);
+          ent.setAttribute('data-original-scale', rand.scale);
+
+          // Add animation for better visual feedback
+          ent.setAttribute('animation__float', {
+            property: 'position',
+            to: `${x.toFixed(2)} ${0.3 + Math.random() * 0.2} ${z.toFixed(2)}`,
+            dir: 'alternate',
+            dur: 2000 + Math.random() * 1000,
+            loop: true
+          });
 
           const label = document.createElement('a-text');
           label.setAttribute('value', rand.label);
@@ -145,7 +194,18 @@
         this.heldType = type;
         this.heldLabel = label;
         this.holdingText.setAttribute('value', `Picked: ${label}`);
-        if (el && el.parentNode) el.remove();
+        
+        // Visual feedback when picking up trash
+        if (el) {
+          el.setAttribute('animation__pickup', {
+            property: 'scale',
+            to: '0 0 0',
+            dur: 300
+          });
+          setTimeout(() => {
+            if (el.parentNode) el.remove();
+          }, 300);
+        }
       },
 
       handleBinClick(binEl) {
@@ -153,6 +213,14 @@
         const binType = binEl.getAttribute('data-accept');
         const correctSound = document.getElementById('correctSound');
         const wrongSound = document.getElementById('wrongSound');
+
+        // Visual feedback for bin interaction
+        binEl.setAttribute('animation__press', {
+          property: 'scale',
+          to: '1.05 0.95 1.05',
+          dur: 200,
+          dir: 'alternate'
+        });
 
         if (this.heldType === binType) {
           this.score = Math.min(this.MAX_SCORE, this.score + 10);
@@ -206,7 +274,7 @@
                         groundDensity: 32; groundFrequency: 8; skyColor: #b3e5fc; fog: 0.9">
 
     <a-entity id="cameraRig" position="0 0.2 4" movement-controls="speed: 0.05" wasd-controls>
-      <a-camera id="camera" look-controls="pointerLockEnabled: false"></a-camera>
+      <a-camera id="camera" look-controls="pointerLockEnabled: false" cursor="rayOrigin: mouse" raycaster="objects: .clickable"></a-camera>
     </a-entity>
 
     <a-entity laser-controls="hand: left" raycaster="objects: .clickable; far: 30;" cursor="fuse: false" super-hands>
@@ -225,7 +293,7 @@
     <a-cylinder id="nonBioBin" class="bin clickable" position="-5 1 -4" radius="0.9" height="1.4" color="#b71c1c" data-accept="nonbio">
       <a-text value="NON-BIO" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
-    <a-cylinder id="paperBin" class= "bin clickable" position="0 1 -4" radius="0.9" height="1.4" color="#fbc02d" data-accept="paper">
+    <a-cylinder id="paperBin" class="bin clickable" position="0 1 -4" radius="0.9" height="1.4" color="#fbc02d" data-accept="paper">
       <a-text value="PAPER" align="center" position="0 1.1 0.15" color="#000" width="3" look-at="#camera"></a-text>
     </a-cylinder>
     <a-cylinder id="metalBin" class="bin clickable" position="5 1 -4" radius="0.9" height="1.4" color="#616161" data-accept="metal">
@@ -256,70 +324,10 @@
       <a-entity id="homeButton" class="clickable"
                 geometry="primitive: box; width: 0.5; height: 0.2; depth: 0.05"
                 material="color: #4A90E2; shader: flat"
-                position="-1.0 0.55 0.05"
-                text="value: HOME; align: center; color: #FFF; width: 2; zOffset: 0.03">
+                position="-1.0 0.55 0.05">
+        <a-text value="HOME" align="center" color="#FFF" width="2" position="0 0 0.03"></a-text>
       </a-entity>
     </a-entity>
   </a-scene>
-  <script>
-    // Explicit raycast fallback for VR controllers: dispatch click events on nearest `.clickable`.
-    (function () {
-      AFRAME.registerComponent('explicit-raycast-on-trigger', {
-        init: function () {
-          const sceneEl = this.el;
-          const DEBUG = true;
-          sceneEl.addEventListener('loaded', () => {
-            const controllers = sceneEl.querySelectorAll('[laser-controls], [hand-controls]');
-            controllers.forEach(ctrl => {
-              ctrl.addEventListener('triggerdown', () => {
-                if (DEBUG) console.log('[explicit-raycast] triggerdown from', ctrl.id || ctrl);
-                const clickableEls = Array.from(sceneEl.querySelectorAll('.clickable'));
-                if (!clickableEls.length) {
-                  if (DEBUG) console.log('[explicit-raycast] no .clickable elements');
-                  return;
-                }
-                const objects = clickableEls.map(el => el.object3D).filter(Boolean);
-
-                const origin = new THREE.Vector3();
-                const dir = new THREE.Vector3(0, 0, -1);
-                const quat = new THREE.Quaternion();
-                ctrl.object3D.getWorldPosition(origin);
-                ctrl.object3D.getWorldQuaternion(quat);
-                dir.applyQuaternion(quat).normalize();
-
-                if (DEBUG) console.log('[explicit-raycast] origin', origin.toArray(), 'dir', dir.toArray());
-
-                const ray = new THREE.Raycaster(origin, dir);
-                const intersects = ray.intersectObjects(objects, true);
-                if (intersects.length === 0) {
-                  if (DEBUG) console.log('[explicit-raycast] no intersections');
-                  return;
-                }
-
-                const hit = intersects[0];
-                if (DEBUG) console.log('[explicit-raycast] hit', hit);
-
-                if (DEBUG) {
-                  const marker = document.createElement('a-sphere');
-                  marker.setAttribute('color', '#ff0000');
-                  marker.setAttribute('radius', '0.05');
-                  marker.setAttribute('position', `${hit.point.x} ${hit.point.y} ${hit.point.z}`);
-                  marker.setAttribute('material', 'shader: flat; opacity: 0.9');
-                  sceneEl.appendChild(marker);
-                  setTimeout(() => marker.remove(), 1000);
-                }
-
-                let el = hit.object.el;
-                while (el && !el.classList.contains('clickable')) el = el.parentNode;
-                if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-              });
-            });
-          });
-        }
-      });
-
-      document.querySelectorAll('a-scene').forEach(s => s.setAttribute('explicit-raycast-on-trigger', ''));
-    })();
-  </script>
 </body>
 </html>
