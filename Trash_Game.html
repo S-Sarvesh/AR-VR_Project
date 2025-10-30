@@ -136,9 +136,19 @@
           label.setAttribute('look-at', '#camera');
           ent.appendChild(label);
 
+          // ✅✅ THE FIX: add click listener for picking
+          ent.addEventListener('click', () => {
+            this.pickTrash(
+              ent.getAttribute('data-type'),
+              ent.getAttribute('data-label'),
+              ent
+            );
+          });
+
           this.sceneEl.appendChild(ent);
         }
       },
+
 
       pickTrash(type, label, el) {
         if (this.heldType) return;
