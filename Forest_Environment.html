@@ -37,20 +37,23 @@
       </a-entity>
       
       <a-entity id="leftHand" hand-controls="hand: left" laser-controls="hand: left"
-                raycaster="objects: .clickable; far: 50; showLine: true; lineColor: red; lineOpacity: 0.5"
+                raycaster="objects: .clickable; far: 30;"
                 cursor="fuse: false"
                 super-hands>
+        <!-- Visible debug ray: thin translucent box extending forward from controller -->
+        <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30" material="color:#ff4444; opacity:0.45; shader: flat"></a-box>
       </a-entity>
       <a-entity id="rightHand" hand-controls="hand: right" laser-controls="hand: right"
-                raycaster="objects: .clickable; far: 50; showLine: true; lineColor: green; lineOpacity: 0.5"
+                raycaster="objects: .clickable; far: 30;"
                 cursor="fuse: false"
                 super-hands>
+        <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30" material="color:#44ff44; opacity:0.45; shader: flat"></a-box>
       </a-entity>
 
       <a-entity id="ui3D" position="0 0.5 -1.5">
         <a-plane width="0.8" height="0.5" color="#000000" opacity="0.6" radius="0.05"></a-plane>
         
-        <!-- HOME button moved to top-left -->
+        <!-- ✅ HOME button moved to top-left -->
         <a-entity id="homeButton" class="clickable"
                   geometry="primitive: box; width: 0.18; height: 0.08; depth: 0.03"
                   material="color: #4A90E2; shader: flat"
@@ -151,38 +154,16 @@
 
           const clickBox = document.createElement("a-box");
           clickBox.setAttribute("class", "clickable"); 
-          clickBox.setAttribute("width", 1.0);
-          clickBox.setAttribute("height", 1.5);
-          clickBox.setAttribute("depth", 1.0);
-          clickBox.setAttribute("position", "0 0.75 0");
-          clickBox.setAttribute("material", "opacity:0; transparent:true; side:double");
+          clickBox.setAttribute("width", 0.5);
+          clickBox.setAttribute("height", 1.0);
+          clickBox.setAttribute("depth", 0.5);
+          // Position the invisible hitbox so its top sits near the sapling model's head
+          clickBox.setAttribute("position", "0 0.5 0");
+          clickBox.setAttribute("material", "opacity:0; transparent:true");
           sapling.appendChild(clickBox);
 
-          // Add visual hover feedback
-          clickBox.addEventListener("mouseenter", () => {
-            const highlight = document.createElement("a-cylinder");
-            highlight.setAttribute("class", "hover-highlight");
-            highlight.setAttribute("radius", "0.6");
-            highlight.setAttribute("height", "0.05");
-            highlight.setAttribute("position", "0 0.05 0");
-            highlight.setAttribute("material", "color:#00ff00; opacity:0.4; transparent:true; shader:flat");
-            highlight.setAttribute("animation", "property: opacity; from: 0.4; to: 0.7; dir: alternate; loop: true; dur: 500");
-            sapling.appendChild(highlight);
-          });
-
-          clickBox.addEventListener("mouseleave", () => {
-            const highlight = sapling.querySelector(".hover-highlight");
-            if (highlight) highlight.remove();
-          });
-
           clickBox.addEventListener("click", (evt) => {
-            if (sapling.getAttribute("grown")) return;
             evt.stopPropagation();
-            
-            // Remove hover highlight if present
-            const highlight = sapling.querySelector(".hover-highlight");
-            if (highlight) highlight.remove();
-            
             createWateringEffect(sapling);
             setTimeout(() => {
               growIntoTree(sapling);
@@ -267,72 +248,71 @@
     </script>
 
   </a-scene>
-  
-  <script>
-    // Explicit raycast fallback: when controller trigger is pressed, perform a THREE.Raycaster
-    // from the controller and dispatch a click event on the nearest `.clickable` element.
-    (function () {
-      AFRAME.registerComponent('explicit-raycast-on-trigger', {
-        init: function () {
-          const sceneEl = this.el;
-          const DEBUG = true;
-          sceneEl.addEventListener('loaded', () => {
-            const controllers = sceneEl.querySelectorAll('[laser-controls], [hand-controls]');
-            controllers.forEach(ctrl => {
-              ctrl.addEventListener('triggerdown', () => {
-                if (DEBUG) console.log('[explicit-raycast] triggerdown from', ctrl.id || ctrl);
-                const clickableEls = Array.from(sceneEl.querySelectorAll('.clickable'));
-                if (!clickableEls.length) {
-                  if (DEBUG) console.log('[explicit-raycast] no .clickable elements');
-                  return;
-                }
-                const objects = clickableEls.map(el => el.object3D).filter(Boolean);
+    <script>
+      // Explicit raycast fallback: when controller trigger is pressed, perform a THREE.Raycaster
+      // from the controller and dispatch a click event on the nearest `.clickable` element.
+      (function () {
+        AFRAME.registerComponent('explicit-raycast-on-trigger', {
+          init: function () {
+            const sceneEl = this.el;
+            const DEBUG = true; // set to false to disable debug logs/markers
+            sceneEl.addEventListener('loaded', () => {
+              const controllers = sceneEl.querySelectorAll('[laser-controls], [hand-controls]');
+              controllers.forEach(ctrl => {
+                ctrl.addEventListener('triggerdown', () => {
+                  if (DEBUG) console.log('[explicit-raycast] triggerdown from', ctrl.id || ctrl);
+                  const clickableEls = Array.from(sceneEl.querySelectorAll('.clickable'));
+                  if (!clickableEls.length) {
+                    if (DEBUG) console.log('[explicit-raycast] no .clickable elements');
+                    return;
+                  }
+                  const objects = clickableEls.map(el => el.object3D).filter(Boolean);
 
-                const origin = new THREE.Vector3();
-                const dir = new THREE.Vector3(0, 0, -1);
-                const quat = new THREE.Quaternion();
-                ctrl.object3D.getWorldPosition(origin);
-                ctrl.object3D.getWorldQuaternion(quat);
-                dir.applyQuaternion(quat).normalize();
+                  const origin = new THREE.Vector3();
+                  const dir = new THREE.Vector3(0, 0, -1);
+                  const quat = new THREE.Quaternion();
+                  ctrl.object3D.getWorldPosition(origin);
+                  ctrl.object3D.getWorldQuaternion(quat);
+                  dir.applyQuaternion(quat).normalize();
 
-                if (DEBUG) console.log('[explicit-raycast] origin', origin.toArray(), 'dir', dir.toArray());
+                  if (DEBUG) console.log('[explicit-raycast] origin', origin.toArray(), 'dir', dir.toArray());
 
-                const ray = new THREE.Raycaster(origin, dir);
-                const intersects = ray.intersectObjects(objects, true);
-                if (intersects.length === 0) {
-                  if (DEBUG) console.log('[explicit-raycast] no intersections');
-                  return;
-                }
+                  const ray = new THREE.Raycaster(origin, dir);
+                  const intersects = ray.intersectObjects(objects, true);
+                  if (intersects.length === 0) {
+                    if (DEBUG) console.log('[explicit-raycast] no intersections');
+                    return;
+                  }
 
-                const hit = intersects[0];
-                if (DEBUG) console.log('[explicit-raycast] hit', hit);
+                  const hit = intersects[0];
+                  if (DEBUG) console.log('[explicit-raycast] hit', hit);
 
-                // Create a small debug marker at the intersection point
-                if (DEBUG) {
-                  const marker = document.createElement('a-sphere');
-                  marker.setAttribute('color', '#ff0000');
-                  marker.setAttribute('radius', '0.05');
-                  marker.setAttribute('position', `${hit.point.x} ${hit.point.y} ${hit.point.z}`);
-                  marker.setAttribute('material', 'shader: flat; opacity: 0.9');
-                  sceneEl.appendChild(marker);
-                  setTimeout(() => marker.remove(), 1000);
-                }
+                  // Create a small debug marker at the intersection point
+                  if (DEBUG) {
+                    const marker = document.createElement('a-sphere');
+                    marker.setAttribute('color', '#ff0000');
+                    marker.setAttribute('radius', '0.05');
+                    marker.setAttribute('position', `${hit.point.x} ${hit.point.y} ${hit.point.z}`);
+                    marker.setAttribute('material', 'shader: flat; opacity: 0.9');
+                    sceneEl.appendChild(marker);
+                    setTimeout(() => marker.remove(), 1000);
+                  }
 
-                let el = hit.object.el;
-                while (el && !el.classList.contains('clickable')) el = el.parentNode;
-                if (el) {
-                  if (DEBUG) console.log('[explicit-raycast] dispatching click to', el);
-                  el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-                }
+                  let el = hit.object.el;
+                  while (el && !el.classList.contains('clickable')) el = el.parentNode;
+                  if (el) {
+                    if (DEBUG) console.log('[explicit-raycast] dispatching click to', el);
+                    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                  }
+                });
               });
             });
-          });
-        }
-      });
+          }
+        });
 
-      // Attach to all scenes on the page
-      document.querySelectorAll('a-scene').forEach(s => s.setAttribute('explicit-raycast-on-trigger', ''));
-    })();
-  </script>
+        // Attach to all scenes on the page
+        document.querySelectorAll('a-scene').forEach(s => s.setAttribute('explicit-raycast-on-trigger', ''));
+      })();
+    </script>
 </body>
 </html>
