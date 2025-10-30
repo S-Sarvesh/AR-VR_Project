@@ -74,7 +74,6 @@
         this.updateScoreUI();
       },
 
-      // direct controller's raycaster intersections handler (keeps older code working)
       controllerClick(controllerEl) {
         const rc = controllerEl.components.raycaster;
         if (!rc || !rc.intersections.length) return;
@@ -151,9 +150,8 @@
           label.setAttribute('look-at', '#camera');
           ent.appendChild(label);
 
-          // Add direct click binding to each spawned trash so explicit click events work
+          // Direct click binding per trash
           ent.addEventListener('click', () => {
-            // If another code path triggers pickTrash recursively, the bound guard in pickTrash will prevent duplicates
             this.pickTrash(rand.type, rand.label, ent);
           });
 
@@ -161,7 +159,6 @@
         }
       },
 
-      // clickable trash
       pickTrash(type, label, el) {
         if (this.heldType) return;
 
@@ -172,7 +169,6 @@
         if (el && el.parentNode) el.remove();
       },
 
-      // clickable bins
       handleBinClick(binEl) {
         if (!this.heldType) return;
 
@@ -211,7 +207,6 @@
         if (!this.scoreText || !this.scoreBarFill) return;
         this.scoreText.setAttribute('value', `Score: ${this.score}`);
         const width = (this.score / this.MAX_SCORE) * 1.6;
-        // Use setAttribute with object for geometry to be safe
         this.scoreBarFill.setAttribute('geometry', { primitive: 'box', width: width, height: 0.15, depth: 0.02 });
         this.scoreBarFill.setAttribute('position', `${-0.8 + width / 2} -0.5 0.01`);
       },
@@ -228,11 +223,10 @@
         this.spawnTrash(12);
       },
 
-      // also bind bins directly on load so they respond to click events
       _bindBinsDirect() {
         const bins = document.querySelectorAll('.bin');
         bins.forEach(bin => {
-          bin.classList.add('clickable'); // ensure class present
+          bin.classList.add('clickable');
           if (!bin._directBound) {
             bin._directBound = true;
             bin.addEventListener('click', () => this.handleBinClick(bin));
@@ -253,24 +247,24 @@
     <a-entity id="cameraRig" position="0 0.2 4" movement-controls="speed: 0.05" wasd-controls>
       <a-camera id="camera" look-controls="pointerLockEnabled: false"></a-camera>
 
-      <!-- LEFT HAND (desktop default position set) -->
+      <!-- LEFT HAND (desktop default position set). NOTE: cursor removed to avoid white ray -->
       <a-entity id="leftHand"
                 position="-0.3 1.4 -0.5"
                 laser-controls="hand: left"
                 raycaster="objects: .clickable; far: 30;"
-                cursor="fuse: false"
                 super-hands>
+        <!-- box-ray visual (red) -->
         <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30"
                material="color:#ff4444; opacity:0.45; shader: flat"></a-box>
       </a-entity>
 
-      <!-- RIGHT HAND (desktop default position set) -->
+      <!-- RIGHT HAND (desktop default position set). cursor removed. -->
       <a-entity id="rightHand"
                 position="0.3 1.4 -0.5"
                 laser-controls="hand: right"
                 raycaster="objects: .clickable; far: 30;"
-                cursor="fuse: false"
                 super-hands>
+        <!-- box-ray visual (green) -->
         <a-box class="ray-viz" position="0 0 -15" width="0.02" height="0.02" depth="30"
                material="color:#44ff44; opacity:0.45; shader: flat"></a-box>
       </a-entity>
@@ -323,11 +317,13 @@
         <a-text value="RESET" align="center" color="#fff" width="2" position="0 0 0.08"></a-text>
       </a-entity>
 
-      <a-entity id="homeButton" class="clickable"
-                geometry="primitive: box; width: 0.5; height: 0.2; depth: 0.05"
-                material="color: #4A90E2; shader: flat"
-                position="-1.0 0.55 0.05"
-                text="value: HOME; align: center; color: #FFF; width: 2; zOffset: 0.03"></a-entity>
+      <!-- HOME button: made thicker and positioned forward, plus clickable class on the same entity -->
+      <a-entity id="homeButton" class="clickable" position="-1.0 0.55 0.18"
+                geometry="primitive: box; width: 0.6; height: 0.25; depth: 0.12"
+                material="color: #4A90E2; shader: flat">
+        <a-text value="HOME" align="center" color="#FFF" width="1.6" position="0 0 0.07"></a-text>
+      </a-entity>
+
     </a-entity>
 
   </a-scene>
@@ -361,11 +357,9 @@
                 if (intersects.length === 0) return;
 
                 let el = intersects[0].object.el;
-                while (el && !el.classList.contains('clickable'))
-                  el = el.parentNode;
+                while (el && !el.classList.contains('clickable')) el = el.parentNode;
 
-                if (el)
-                  el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
               });
             });
           });
