@@ -43,7 +43,7 @@
         this.scoreBarFill = document.getElementById('scoreBarFill');
         this.holdingText = document.getElementById('holdingText');
         this.resetBtn = document.getElementById('resetBtn3D');
-
+        this.homeBtn = document.getElementById('homeButton');
         this.worldMessage = document.createElement('a-text');
         this.worldMessage.setAttribute('value', '');
         this.worldMessage.setAttribute('align', 'center');
@@ -64,6 +64,12 @@
         if (this.resetBtn) {
           this.resetBtn.addEventListener('click', this.resetGame);
           this.resetBtn.addEventListener('triggerdown', this.resetGame);
+        }
+
+        if (this.homeBtn) {
+          this.homeBtn.addEventListener('click', () => {
+            window.location.href = './index.html';
+          });
         }
 
         this.sceneEl.addEventListener('mousedown', this.onMouseDown);
@@ -118,7 +124,7 @@
         else if (el.id === 'homeButton')
           window.location.href = './index.html';
       },
-
+      
       spawnTrash(count = 12) {
         const garbageTypes = [
           { type: 'bio', model: 'models/fruits.glb', label: 'Food/Leaf', scale: '0.75 0.75 0.75' },
